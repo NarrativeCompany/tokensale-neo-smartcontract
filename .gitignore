@@ -2,4 +2,5 @@ venv
 *.pyc
 *.avm
 .idea
+*.iml
 __pycache__
