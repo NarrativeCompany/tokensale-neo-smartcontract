@@ -23,7 +23,7 @@ class Crowdsale():
     presale_individual_limit = 10000 * 100000000
     presale_tokens_per_neo = 400 * 100000000
     presale_minimum = 800 * 100000000
-    presale_token_limit = 20000000 * 100000000  # 40% of 50m total supply = 20m * 10^8 (decimals)
+    presale_token_limit = 25000000 * 100000000  # 50% of 50m total supply = 25m * 10^8 (decimals)
 
     # February 13, 2018 @ 5:00:00 pm UTC
     day1_start = 1518541200
@@ -47,8 +47,8 @@ class Crowdsale():
     team_tokens_max = 20000000 * 100000000  # 20m team tokens * 10^8 (decimals)
     team_token_distribution_key = b'team_tokens'
 
-    # October 1, 2018 00:00 UTC
-    initial_team_vest_date = 1538352000
+    # January 1, 2019 00:00 UTC
+    initial_team_vest_date = 1546300800
 
     company_tokens_max = 30000000 * 100000000  # 30m company tokens * 10^8 (decimals)
     company_token_distribution_key = b'company_tokens'
@@ -140,6 +140,10 @@ class Crowdsale():
         attachments = get_asset_attachments()  # type:  Attachments
 
         storage = StorageAPI()
+
+        # don't allow any contributions if the sale is paused (can't purely rely on Verification to do this check since Verification may not occur)
+        if storage.get(token.sale_paused_key):
+            return False
 
         # this looks up whether the exchange can proceed
         tokens = self.check_and_calculate_tokens(token, attachments, storage)
@@ -454,8 +458,8 @@ class Crowdsale():
 
         now = self.now()
 
-        # no minting rewards tokens until after the product launches (i.e. the initial team vest date)
-        if now < self.initial_team_vest_date:
+        # no minting rewards tokens until after the token sale ends
+        if now < self.sale_end:
             return False
 
         rewards_fund_tokens_distributed = storage.get(self.rewards_fund_token_distribution_key)
