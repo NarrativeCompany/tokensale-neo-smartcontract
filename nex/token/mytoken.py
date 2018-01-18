@@ -1,6 +1,7 @@
 from nex.common.storage import StorageAPI
 
-class Token():
+
+class Token:
     """
     Basic settings for an NEP5 Token and crowdsale
     """
@@ -16,11 +17,12 @@ class Token():
     original_owner = b'#\xba\'\x03\xc52c\xe8\xd6\xe5"\xdc2 39\xdc\xd8\xee\xe9'
 
     owner_key = b'owner'
+    sale_paused_key = b'sale_paused'
 
     in_circulation_key = b'in_circulation'
 
-    total_supply = 197500000 * 100000000  # 197.5m total supply * 10^8 ( decimals)
-    sale_token_limit = 50000000 * 100000000  # 50m total supply * 10^8 ( decimals)
+    total_supply = 197500000 * 100000000  # 197.5m total supply * 10^8 (decimals)
+    sale_token_limit = 50000000 * 100000000  # 50m tokens for sale * 10^8 (decimals)
 
     def crowdsale_available_amount(self):
         """
@@ -35,13 +37,12 @@ class Token():
 
         return available
 
-
-    def add_to_circulation(self, amount:int, storage:StorageAPI):
+    def add_to_circulation(self, amount: int, storage: StorageAPI):
         """
         Adds an amount of token to circlulation
 
         :param amount: int the amount to add to circulation
-        :param storage:StorageAPI A StorageAPI object for storage interaction
+        :param storage: StorageAPI A StorageAPI object for storage interaction
         """
         current_supply = storage.get(self.in_circulation_key)
 
@@ -49,15 +50,12 @@ class Token():
 
         storage.put(self.in_circulation_key, current_supply)
 
-
-
-    def get_circulation(self, storage:StorageAPI):
+    def get_circulation(self, storage: StorageAPI):
         """
         Get the total amount of tokens in circulation
 
-        :param storage:StorageAPI A StorageAPI object for storage interaction
+        :param storage: StorageAPI A StorageAPI object for storage interaction
         :return:
             int: Total amount in circulation
         """
         return storage.get(self.in_circulation_key)
-

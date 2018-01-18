@@ -9,8 +9,8 @@ from nex.common.txio import Attachments,get_asset_attachments
 OnTransfer = RegisterAction('transfer', 'from', 'to', 'amount')
 OnRefund = RegisterAction('refund', 'to', 'amount')
 
-OnInvalidKYCAddress = RegisterAction('invalid_registration','address')
 OnKYCRegister = RegisterAction('kyc_registration','address')
+OnKYCDeregister = RegisterAction('kyc_deregistration','address')
 
 
 class Crowdsale():
@@ -23,7 +23,7 @@ class Crowdsale():
     presale_individual_limit = 10000 * 100000000
     presale_tokens_per_neo = 400 * 100000000
     presale_minimum = 800 * 100000000
-    presale_token_limit = 20000000 * 100000000  # 40% of 50m total supply = 20m * 10^8 ( decimals)
+    presale_token_limit = 20000000 * 100000000  # 40% of 50m total supply = 20m * 10^8 (decimals)
 
     # February 13, 2018 @ 5:00:00 pm UTC
     day1_start = 1518541200
@@ -44,13 +44,25 @@ class Crowdsale():
     # March 22, 2018 @ 5:00:00 pm UTC
     sale_end = 1521738000
 
-    def kyc_register(self, args, token:Token):
+    team_tokens_max = 20000000 * 100000000  # 20m team tokens * 10^8 (decimals)
+    team_token_distribution_key = b'team_tokens'
+
+    # October 1, 2018 00:00 UTC
+    initial_team_vest_date = 1538352000
+
+    company_tokens_max = 30000000 * 100000000  # 30m company tokens * 10^8 (decimals)
+    company_token_distribution_key = b'company_tokens'
+
+    rewards_fund_tokens_max = 97500000 * 100000000  # 97.5m tokens can be minted for the rewards fund * 10^8 (decimals)
+    rewards_fund_token_distribution_key = b'rewards_fund'
+
+    def kyc_register(self, args, token: Token):
         """
 
         :param args:list a list of addresses to register
-        :param token:Token A token object with your ICO settings
+        :param token: Token A token object with your ICO settings
         :return:
-            int: The number of addresses to register for KYC
+            int: The number of addresses registered for KYC
         """
         ok_count = 0
 
@@ -71,6 +83,32 @@ class Crowdsale():
 
         return ok_count
 
+    def kyc_deregister(self, args, token: Token):
+        """
+
+        :param args:list a list of addresses to deregister
+        :param token: Token A token object with your ICO settings
+        :return:
+            int: The number of addresses deregistered from KYC
+        """
+        ok_count = 0
+
+        storage = StorageAPI()
+
+        owner = storage.get(token.owner_key)
+        if CheckWitness(owner):
+
+            for address in args:
+
+                if len(address) == 20:
+
+                    kyc_storage_key = concat(self.kyc_key, address)
+                    storage.delete(kyc_storage_key)
+
+                    OnKYCDeregister(address)
+                    ok_count += 1
+
+        return ok_count
 
     def kyc_status(self, args):
         """
@@ -91,12 +129,10 @@ class Crowdsale():
 
         return False
 
-
-
     def exchange(self, token: Token):
         """
-
-        :param token:Token The token object with NEP5/sale settings
+        Make a token sale contribution to exchange NEO for NRV
+        :param token: Token The token object with NEP5/sale settings
         :return:
             bool: Whether the exchange was successful
         """
@@ -117,24 +153,11 @@ class Crowdsale():
             OnRefund(attachments.sender_addr, attachments.neo_attached)
             return False
 
-
-        # lookup the current balance of the address
-        current_balance = storage.get(attachments.sender_addr)
-
-        # add it to the the exchanged tokens and persist in storage
-        new_total = tokens + current_balance
-        storage.put(attachments.sender_addr, new_total)
-
-        # update the in circulation amount
-        token.add_to_circulation(tokens, storage)
-
-        # dispatch transfer event
-        OnTransfer(attachments.receiver_addr, attachments.sender_addr, tokens)
+        self.mint_tokens(token, attachments.receiver_addr, attachments.sender_addr, tokens, storage)
 
         return True
 
-
-    def check_and_calculate_tokens(self, token:Token, attachments:Attachments, storage:StorageAPI):
+    def check_and_calculate_tokens(self, token: Token, attachments: Attachments, storage: StorageAPI):
         """
         Determines if the contract invocation meets all requirements for the ICO exchange
         of neo into NEP5 Tokens.
@@ -143,9 +166,9 @@ class Crowdsale():
         When called in the Verification portion of an SC, it can be used to reject TX that do not qualify
         for exchange, thereby reducing the need for manual NEO refunds considerably
 
-        :param token:Token A token object with your ICO settings
-        :param attachments:Attachments An attachments object with information about attached NEO/Gas assets
-        :param storage:StorageAPI A StorageAPI object for storage interaction
+        :param token: Token A token object with your ICO settings
+        :param attachments: Attachments An attachments object with information about attached NEO/Gas assets
+        :param storage: StorageAPI A StorageAPI object for storage interaction
         :return:
             int: Total amount of tokens to distribute, or 0 if this isn't a valid contribution
         """
@@ -162,19 +185,18 @@ class Crowdsale():
             return 0
 
         # it turns out this is REQUIRED to work around a neo-boa python compiler issue: https://github.com/CityOfZion/neo-boa/issues/29
-        #else:
+        # else:
         #    print("KYC approved")
         j = 0
 
         return self.calculate_tokens(token, attachments.neo_attached, attachments.sender_addr)
 
-
-    def get_kyc_status(self, address, storage:StorageAPI):
+    def get_kyc_status(self, address, storage: StorageAPI):
         """
         Looks up the KYC status of an address
 
         :param address:bytearray The address to lookup
-        :param storage:StorageAPI A StorageAPI object for storage interaction
+        :param storage: StorageAPI A StorageAPI object for storage interaction
         :return:
             bool: KYC Status of address
         """
@@ -186,15 +208,13 @@ class Crowdsale():
         """
         Perform custom token exchange calculations here.
 
-        :param token:Token The token settings for the sale
-        :param amount:int Number of NEO to convert to tokens
-        :param address:bytearray The address to mint the tokens to
+        :param token: Token The token settings for the sale
+        :param neo_attached: int Number of NEO to convert to tokens
+        :param address: bytearray The address to mint the tokens to
         :return:
             int: Total amount of tokens to distribute, or 0 if this isn't a valid contribution
         """
-        height = GetHeight()
-        currentBlock = GetHeader(height)
-        time = currentBlock.Timestamp
+        time = self.now()
 
         if time > self.sale_end:
             print("crowdsale ended")
@@ -271,3 +291,189 @@ class Crowdsale():
 
         return 0
 
+    def mint_tokens(self, token: Token, from_address, to_address, tokens, storage: StorageAPI):
+        """
+        Mint tokens for an address
+        :param token: the token being minted
+        :param from_address: the address from which the tokens are being minted (should always be the contract address)
+        :param to_address: the address to transfer the minted tokens to
+        :param tokens: the number of tokens to mint
+        :param storage: StorageAPI
+        """
+        # lookup the current balance of the address
+        current_balance = storage.get(to_address)
+
+        # add it to the the exchanged tokens and persist in storage
+        new_total = tokens + current_balance
+        storage.put(to_address, new_total)
+
+        # update the in circulation amount
+        token.add_to_circulation(tokens, storage)
+
+        # dispatch transfer event
+        OnTransfer(from_address, to_address, tokens)
+
+    def transfer_team_tokens(self, token: Token, args):
+        """
+        Transfer team tokens to a wallet address according to the 3-year team token vesting schedule
+        :param token: the token being minted for the team
+        :param args: the address and number of tokens to mint
+        :return: True if successful
+        """
+        storage = StorageAPI()
+
+        owner = storage.get(token.owner_key)
+        if not CheckWitness(owner):
+            return False
+
+        if len(args) != 2:
+            return False
+
+        address = args[0]
+        tokens = args[1]
+
+        if len(address) != 20:
+            return False
+        if tokens <= 0:
+            return False
+
+        now = self.now()
+
+        # no team token distribution until initial team vest date at the earliest
+        if now < self.initial_team_vest_date:
+            return False
+
+        seconds_in_year = 31536000
+
+        # in the first year, allow 30% token distribution
+        if now < (self.initial_team_vest_date + seconds_in_year):
+            max_token_distribution = self.team_tokens_max * 3 / 10
+        # in the second year, allow 60% total token distribution
+        elif now < (self.initial_team_vest_date + (2*seconds_in_year)):
+            max_token_distribution = self.team_tokens_max * 6 / 10
+        # in the third year, allow 80% total token distribution
+        elif now < (self.initial_team_vest_date + (3*seconds_in_year)):
+            max_token_distribution = self.team_tokens_max * 8 / 10
+        # beyond the third year, allow 100% total token distribution
+        else:
+            max_token_distribution = self.team_tokens_max
+
+        team_tokens_distributed = storage.get(self.team_token_distribution_key)
+
+        team_tokens_distributed += tokens
+
+        # don't allow more than the max tokens to be distributed
+        if team_tokens_distributed > max_token_distribution:
+            return False
+
+        attachments = get_asset_attachments()  # type:  Attachments
+
+        self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+
+        return True
+
+    def transfer_company_tokens(self, token: Token, args):
+        """
+        Transfer company tokens to a wallet address according to the 2-year company token vesting schedule
+        :param token: the token being minted for the company
+        :param args: the address and number of tokens to mint
+        :return: True if successful
+        """
+        storage = StorageAPI()
+
+        owner = storage.get(token.owner_key)
+        if not CheckWitness(owner):
+            return False
+
+        if len(args) != 2:
+            return False
+
+        address = args[0]
+        tokens = args[1]
+
+        if len(address) != 20:
+            return False
+        if tokens <= 0:
+            return False
+
+        now = self.now()
+
+        seconds_in_year = 31536000
+
+        # no company token distribution until after the ICO ends
+        if now < self.sale_end:
+            return False
+
+        # in the first year, allow 50% token distribution
+        if now < (self.sale_end + seconds_in_year):
+            max_token_distribution = self.company_tokens_max * 5 / 10
+        # in the second year, allow 75% total token distribution
+        elif now < (self.sale_end + (2*seconds_in_year)):
+            max_token_distribution = self.company_tokens_max * 75 / 100
+        # beyond the second year, allow 100% total token distribution
+        else:
+            max_token_distribution = self.company_tokens_max
+
+        company_tokens_distributed = storage.get(self.company_token_distribution_key)
+
+        company_tokens_distributed += tokens
+
+        # don't allow more than the max tokens to be distributed
+        if company_tokens_distributed > max_token_distribution:
+            return False
+
+        attachments = get_asset_attachments()  # type:  Attachments
+
+        self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+
+        return True
+
+    def mint_rewards_tokens(self, token: Token, args):
+        """
+        Mint tokens for the rewards pool
+        :param token: the token being minted for the rewards pool
+        :param args: the address and number of tokens to mint
+        :return: True if successful
+        """
+        storage = StorageAPI()
+
+        owner = storage.get(token.owner_key)
+        if not CheckWitness(owner):
+            return False
+
+        if len(args) != 2:
+            return False
+
+        address = args[0]
+        tokens = args[1]
+
+        if len(address) != 20:
+            return False
+        if tokens <= 0:
+            return False
+
+        now = self.now()
+
+        # no minting rewards tokens until after the product launches (i.e. the initial team vest date)
+        if now < self.initial_team_vest_date:
+            return False
+
+        rewards_fund_tokens_distributed = storage.get(self.rewards_fund_token_distribution_key)
+
+        rewards_fund_tokens_distributed += tokens
+
+        # don't allow more than the max tokens to be distributed
+        if rewards_fund_tokens_distributed > self.rewards_fund_tokens_max:
+            return False
+
+        attachments = get_asset_attachments()  # type:  Attachments
+
+        self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+
+        return True
+
+    @staticmethod
+    def now():
+        height = GetHeight()
+        current_block = GetHeader(height)
+        return current_block.Timestamp

@@ -37,13 +37,14 @@ def Main(operation, args):
 
         storage = StorageAPI()
 
+        # don't allow any contributions if the sale is paused
+        if storage.get(token.sale_paused_key):
+            return False
+
         owner = storage.get(token.owner_key)
 
-        # check if the invoker is the owner of this contract
-        is_owner = CheckWitness(owner)
-
-        # If owner, proceed
-        if is_owner:
+        # If the invoker is the owner of this contract, proceed
+        if CheckWitness(owner):
 
             return True
 
@@ -57,10 +58,9 @@ def Main(operation, args):
         # zero indicates that there is a reason this contribution will not be allowed
         return crowdsale.check_and_calculate_tokens(token, attachments, storage) > 0
 
-
     elif trigger == Application:
 
-        if operation != None:
+        if operation is not None:
 
             nep = NEP5Handler()
 
@@ -85,15 +85,33 @@ def Main(operation, args):
             if operation == 'crowdsale_register':
                 return sale.kyc_register(args, token)
 
+            if operation == 'crowdsale_deregister':
+                return sale.kyc_deregister(args, token)
+
             if operation == 'crowdsale_status':
                 return sale.kyc_status(args)
 
             if operation == 'crowdsale_available':
                 return token.crowdsale_available_amount()
 
+            if operation == 'transfer_team_tokens':
+                return sale.transfer_team_tokens(token, args)
+
+            if operation == 'transfer_company_tokens':
+                return sale.transfer_company_tokens(token, args)
+
+            if operation == 'mint_rewards_tokens':
+                return sale.mint_rewards_tokens(token, args)
+
             if operation == 'change_owner':
                 owner = args[0]
                 return change_owner(token, owner)
+
+            if operation == 'pause_sale':
+                return pause_sale(token)
+
+            if operation == 'resume_sale':
+                return resume_sale(token)
 
             return 'unknown operation'
 
@@ -125,9 +143,9 @@ def deploy(token: Token):
 
 def change_owner(token: Token, new_owner):
     """
-
     Change the owner of this smart contract who will be able to perform protected operations
     :param token: Token The token to change the owner for
+    :param new_owner: the new owner of the contract
     :return:
         bool: Whether the operation was successful
     """
@@ -148,5 +166,19 @@ def change_owner(token: Token, new_owner):
     return True
 
 
+def pause_sale(token: Token):
+    storage = StorageAPI()
+
+    # mark the sale as paused
+    storage.put(token.sale_paused_key, True)
+
+    return True
 
 
+def resume_sale(token: Token):
+    storage = StorageAPI()
+
+    # mark the sale as active
+    storage.delete(token.sale_paused_key)
+
+    return True
