@@ -11,11 +11,11 @@ Date: Dec 11 2017
 
 from boa.blockchain.vm.Neo.Runtime import GetTrigger, CheckWitness, Notify
 from boa.blockchain.vm.Neo.TriggerType import Application, Verification
-from nex.common.storage import StorageAPI
-from nex.common.txio import Attachments,get_asset_attachments
-from nex.token.mytoken import Token
-from nex.token.nep5 import NEP5Handler
-from nex.token.crowdsale import Crowdsale
+from nrv.common.storage import StorageAPI
+from nrv.common.txio import Attachments,get_asset_attachments
+from nrv.token.nrvtoken import Token
+from nrv.token.nep5 import NEP5Handler
+from nrv.token.crowdsale import Crowdsale
 
 
 def Main(operation, args):

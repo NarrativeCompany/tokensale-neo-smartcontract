@@ -1,4 +1,4 @@
-from nex.common.storage import StorageAPI
+from nrv.common.storage import StorageAPI
 
 
 class Token:

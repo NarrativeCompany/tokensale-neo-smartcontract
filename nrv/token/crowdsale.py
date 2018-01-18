@@ -2,9 +2,9 @@ from boa.blockchain.vm.Neo.Blockchain import GetHeight,GetHeader
 from boa.blockchain.vm.Neo.Action import RegisterAction
 from boa.blockchain.vm.Neo.Runtime import Notify,CheckWitness
 from boa.code.builtins import concat
-from nex.token.mytoken import Token
-from nex.common.storage import StorageAPI
-from nex.common.txio import Attachments,get_asset_attachments
+from nrv.token.nrvtoken import Token
+from nrv.common.storage import StorageAPI
+from nrv.common.txio import Attachments,get_asset_attachments
 
 OnTransfer = RegisterAction('transfer', 'from', 'to', 'amount')
 OnRefund = RegisterAction('refund', 'to', 'amount')
