@@ -17,6 +17,7 @@ class Token:
     original_owner = b'#\xba\'\x03\xc52c\xe8\xd6\xe5"\xdc2 39\xdc\xd8\xee\xe9'
 
     owner_key = b'owner'
+    new_owner_key = b'new_owner'
     sale_paused_key = b'sale_paused'
 
     in_circulation_key = b'in_circulation'

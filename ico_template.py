@@ -31,7 +31,7 @@ def Main(operation, args):
     token = Token()
 
     # This is used in the Verification portion of the contract
-    # To determine whether a transfer of system assets ( NEO/Gas) involving
+    # To determine whether a transfer of system assets (NEO/Gas) involving
     # This contract's address can proceed
     if trigger == Verification:
 
@@ -43,10 +43,14 @@ def Main(operation, args):
 
         owner = storage.get(token.owner_key)
 
-        # If the invoker is the owner of this contract, proceed
-        if CheckWitness(owner):
-
-            return True
+        if owner:
+            # If the invoker is the owner of this contract, proceed
+            if CheckWitness(owner):
+                return True
+        else:
+            # check original_owner if not deployed yet (i.e. no owner in storage)
+            if CheckWitness(token.original_owner):
+                return True
 
         # Otherwise, we need to lookup the assets and determine
         # If attachments of assets is ok
@@ -107,6 +111,12 @@ def Main(operation, args):
                 owner = args[0]
                 return change_owner(token, owner)
 
+            if operation == 'accept_owner':
+                return accept_owner(token)
+
+            if operation == 'cancel_change_owner':
+                return cancel_change_owner(token)
+
             if operation == 'pause_sale':
                 return pause_sale(token)
 
@@ -131,19 +141,19 @@ def deploy(token: Token):
 
     storage = StorageAPI()
 
-    if not storage.get(token.owner_key):
+    # can only deploy once, so if we already have an owner, no-op
+    if storage.get(token.owner_key):
+        return False
 
-        # mark the current owner, which can be changed later
-        storage.put(token.owner_key, token.original_owner)
+    # mark the current owner, which can be changed later
+    storage.put(token.owner_key, token.original_owner)
 
-        return True
-
-    return False
+    return True
 
 
 def change_owner(token: Token, new_owner):
     """
-    Change the owner of this smart contract who will be able to perform protected operations
+    Record a transfer request to a new owner. The new order must accept the request via accept_owner
     :param token: Token The token to change the owner for
     :param new_owner: the new owner of the contract
     :return:
@@ -160,8 +170,58 @@ def change_owner(token: Token, new_owner):
         print("Must be owner to change owner")
         return False
 
-    # set the new owner
+    # setup the new owner. will need to be accepted by the new owner in order to finalize
+    storage.put(token.new_owner_key, new_owner)
+
+    return True
+
+
+def cancel_change_owner(token: Token):
+    """
+    Cancel a pending ownership transfer request
+    :param token: Token The token to cancel the ownership transfer for
+    :return:
+        bool: Whether the operation was successful
+    """
+    storage = StorageAPI()
+
+    owner = storage.get(token.owner_key)
+    if not owner:
+        print("Must change_owner before canceling owner change")
+        return False
+
+    if not CheckWitness(owner):
+        print("Must be owner to cancel change_owner")
+        return False
+
+    # delete the new owner to cancel the transfer.
+    storage.delete(token.new_owner_key)
+
+    return True
+
+
+def accept_owner(token: Token):
+    """
+    Change the owner of this smart contract who will be able to perform protected operations
+    :param token: Token The token to change the owner for
+    :return:
+        bool: Whether the operation was successful
+    """
+    storage = StorageAPI()
+
+    new_owner = storage.get(token.new_owner_key)
+    if not new_owner:
+        print("Must call change_owner before accept_owner")
+        return False
+
+    if not CheckWitness(new_owner):
+        print("Must be new_owner to accept owner")
+        return False
+
+    # setup the new owner.
     storage.put(token.owner_key, new_owner)
+    # now that it's accepted, make the change official by removing the pending new_owner
+    storage.delete(token.new_owner_key)
 
     return True
 
