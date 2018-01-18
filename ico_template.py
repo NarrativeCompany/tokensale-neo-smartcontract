@@ -30,15 +30,17 @@ def Main(operation, args):
     trigger = GetTrigger()
     token = Token()
 
-    #print("Executing ICO Template")
-
     # This is used in the Verification portion of the contract
     # To determine whether a transfer of system assets ( NEO/Gas) involving
     # This contract's address can proceed
     if trigger == Verification:
 
+        storage = StorageAPI()
+
+        owner = storage.get(token.owner_key)
+
         # check if the invoker is the owner of this contract
-        is_owner = CheckWitness(token.owner)
+        is_owner = CheckWitness(owner)
 
         # If owner, proceed
         if is_owner:
@@ -49,11 +51,11 @@ def Main(operation, args):
         # If attachments of assets is ok
         attachments = get_asset_attachments()  # type:Attachments
 
-        storage = StorageAPI()
-
         crowdsale = Crowdsale()
 
-        return crowdsale.can_exchange(token, attachments, storage)
+        # the exchange will be allowed if the number of tokens to convert to is greater than zero.
+        # zero indicates that there is a reason this contribution will not be allowed
+        return crowdsale.check_and_calculate_tokens(token, attachments, storage) > 0
 
 
     elif trigger == Application:
@@ -89,6 +91,10 @@ def Main(operation, args):
             if operation == 'crowdsale_available':
                 return token.crowdsale_available_amount()
 
+            if operation == 'change_owner':
+                owner = args[0]
+                return change_owner(token, owner)
+
             return 'unknown operation'
 
     return False
@@ -101,22 +107,46 @@ def deploy(token: Token):
     :return:
         bool: Whether the operation was successful
     """
-    if not CheckWitness(token.owner):
-        print("Must be owner to deploy")
+    if not CheckWitness(token.original_owner):
+        print("Must be original_owner to deploy")
         return False
 
     storage = StorageAPI()
 
-    if not storage.get('initialized'):
+    if not storage.get(token.owner_key):
 
-        # do deploy logic
-        storage.put('initialized', 1)
-        storage.put(token.owner, token.initial_amount)
-        token.add_to_circulation(token.initial_amount, storage)
+        # mark the current owner, which can be changed later
+        storage.put(token.owner_key, token.original_owner)
 
         return True
 
     return False
+
+
+def change_owner(token: Token, new_owner):
+    """
+
+    Change the owner of this smart contract who will be able to perform protected operations
+    :param token: Token The token to change the owner for
+    :return:
+        bool: Whether the operation was successful
+    """
+    storage = StorageAPI()
+
+    owner = storage.get(token.owner_key)
+    if not owner:
+        print("Must deploy before changing owner")
+        return False
+
+    if not CheckWitness(owner):
+        print("Must be owner to change owner")
+        return False
+
+    # set the new owner
+    storage.put(token.owner_key, new_owner)
+
+    return True
+
 
 
 

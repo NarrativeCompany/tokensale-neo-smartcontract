@@ -5,37 +5,22 @@ class Token():
     Basic settings for an NEP5 Token and crowdsale
     """
 
-    name = 'NEX Template'
+    name = 'Narrative'
 
-    symbol = 'NXT'
+    symbol = 'NRV'
 
     decimals = 8
 
     # This is the script hash of the address for the owner of the token
-    # This can be found in ``neo-python`` with the walet open, use ``wallet`` command
-    owner = b'\xaf\x12\xa8h{\x14\x94\x8b\xc4\xa0\x08\x12\x8aU\nci[\xc1\xa5'
+    # This can be found in ``neo-python`` with the wallet open, use ``wallet`` command
+    original_owner = b'#\xba\'\x03\xc52c\xe8\xd6\xe5"\xdc2 39\xdc\xd8\xee\xe9'
+
+    owner_key = b'owner'
 
     in_circulation_key = b'in_circulation'
 
-    total_supply = 10000000 * 100000000  # 10m total supply * 10^8 ( decimals)
-
-    initial_amount = 2500000 * 100000000  # 2.5m to owners * 10^8
-
-    # for now assume 1 dollar per token, and one neo = 40 dollars * 10^8
-    tokens_per_neo = 40 * 100000000
-
-    # for now assume 1 dollar per token, and one gas = 20 dollars * 10^8
-    tokens_per_gas = 20 * 100000000
-
-    # maximum amount you can mint in the limited round ( 500 neo/person * 40 Tokens/NEO * 10^8 )
-    max_exchange_limited_round = 500 * 40 * 100000000
-
-    # when to start the crowdsale
-    block_sale_start = 875000
-
-    # when to end the initial limited round
-    limited_round_end = 875000 + 10000
-
+    total_supply = 197500000 * 100000000  # 197.5m total supply * 10^8 ( decimals)
+    sale_token_limit = 50000000 * 100000000  # 50m total supply * 10^8 ( decimals)
 
     def crowdsale_available_amount(self):
         """
@@ -46,7 +31,7 @@ class Token():
 
         in_circ = storage.get(self.in_circulation_key)
 
-        available = self.total_supply - in_circ
+        available = self.sale_token_limit - in_circ
 
         return available
 

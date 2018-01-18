@@ -35,7 +35,7 @@ class NEP5Handler():
         arg_error = 'Incorrect Arg Length'
 
         if operation == 'totalSupply':
-            return storage.get(token.in_circulation_key)
+            return token.get_circulation(storage)
 
         elif operation == 'balanceOf':
             if len(args) == 1:
