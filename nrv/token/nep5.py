@@ -122,6 +122,9 @@ class NEP5Handler():
 
         available_key = concat(t_from, t_to)
 
+        if len(available_key) != 40:
+            return False
+
         available_to_to_addr = storage.get(available_key)
 
         if available_to_to_addr < amount:
@@ -172,6 +175,9 @@ class NEP5Handler():
 
             approval_key = concat(t_owner, t_spender)
 
+            if len(approval_key) != 40:
+                return False
+
             current_approved_balance = storage.get(approval_key)
 
             new_approved_balance = current_approved_balance + amount
@@ -187,6 +193,9 @@ class NEP5Handler():
     def do_allowance(self, storage: StorageAPI, t_owner, t_spender):
 
         allowance_key = concat(t_owner, t_spender)
+
+        if len(allowance_key) != 40:
+            return 0
 
         amount = storage.get(allowance_key)
 
