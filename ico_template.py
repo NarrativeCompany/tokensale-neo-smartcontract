@@ -64,7 +64,7 @@ def Main(operation, args):
 
     elif trigger == Application:
 
-        if operation is not None:
+        if operation != None:
 
             nep = NEP5Handler()
 
