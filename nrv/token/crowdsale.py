@@ -7,6 +7,7 @@ from nrv.common.storage import StorageAPI
 from nrv.common.txio import Attachments,get_asset_attachments
 
 OnTransfer = RegisterAction('transfer', 'from', 'to', 'amount')
+OnContribution = RegisterAction('contribution', 'from', 'neo', 'tokens')
 OnRefund = RegisterAction('refund', 'to', 'amount')
 
 OnKYCRegister = RegisterAction('kyc_registration','address')
@@ -158,6 +159,9 @@ class Crowdsale():
             return False
 
         self.mint_tokens(token, attachments.receiver_addr, attachments.sender_addr, tokens, storage)
+
+        # track contributions as a separate event for token sale account page transaction updates
+        OnContribution(attachments.sender_addr, attachments.neo_attached, tokens)
 
         return True
 
