@@ -29,13 +29,13 @@ class Crowdsale():
     # February 13, 2018 @ 5:00:00 pm UTC
     day1_start = 1518541200
     day1_phase_key = b'r2'
-    day1_individual_limit = 1000 * 100000000
+    day1_individual_limit = 300 * 100000000
     day1_tokens_per_neo = 333 * 100000000
 
     # February 14, 2018 @ 5:00:00 pm UTC
     day2_start = 1518627600
     day2_phase_key = b'r3'
-    day2_individual_limit = 5000 * 100000000
+    day2_individual_limit = 1000 * 100000000
     day2_tokens_per_neo = 315 * 100000000
 
     # February 15, 2018 @ 4:59:59 pm UTC
