@@ -374,6 +374,8 @@ class Crowdsale():
         if team_tokens_distributed > max_token_distribution:
             return False
 
+        storage.put(self.team_token_distribution_key, team_tokens_distributed)
+
         attachments = get_asset_attachments()  # type:  Attachments
 
         self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
@@ -430,6 +432,8 @@ class Crowdsale():
         if company_tokens_distributed > max_token_distribution:
             return False
 
+        storage.put(self.company_token_distribution_key, company_tokens_distributed)
+
         attachments = get_asset_attachments()  # type:  Attachments
 
         self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
@@ -473,6 +477,8 @@ class Crowdsale():
         # don't allow more than the max tokens to be distributed
         if rewards_fund_tokens_distributed > self.rewards_fund_tokens_max:
             return False
+
+        storage.put(self.rewards_fund_token_distribution_key, rewards_fund_tokens_distributed)
 
         attachments = get_asset_attachments()  # type:  Attachments
 
