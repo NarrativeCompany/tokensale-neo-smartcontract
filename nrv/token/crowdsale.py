@@ -21,7 +21,7 @@ class Crowdsale():
     # February 9, 2018 @ 9:00:00 pm UTC
     presale_end = 1518210000
     presale_phase_key = b'r1'
-    presale_individual_limit = 10000 * 100000000
+    presale_individual_limit = 3000 * 100000000
     presale_tokens_per_neo = 400 * 100000000
     presale_minimum = 800 * 100000000
     presale_token_limit = 25000000 * 100000000  # 50% of 50m total supply = 25m * 10^8 (decimals)
