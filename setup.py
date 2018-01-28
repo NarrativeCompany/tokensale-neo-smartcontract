@@ -14,22 +14,27 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 
 setup(
-    name='neo-ico-template',
+    name='tokensale-neo-smartcontract',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
     version='0.1.0',
 
-    description='A Python Template for an NEP5 Token',
+    description='Narrative\'s ICO NEP-5 token sale smart contract',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/neonexchange/neo-ico-template',
+    url='https://github.com/NarrativeNetwork/tokensale-neo-smartcontract',
+    # Originally from:
+    #url='https://github.com/neonexchange/neo-ico-template',
 
     # Author details
-    author='Thomas Saunders',
-    author_email='tom@neonexchange.org',
+    author='Brian Lenz',
+    author_email='brian@narrative.network',
+    # Original Author details
+    #author='Thomas Saunders',
+    #author_email='tom@neonexchange.org',
 
     # Choose your license
     license='GPL3',
@@ -56,7 +61,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='NEP5 ICO Token NEO .avm blockchain development dApp',
+    keywords='Narrative NRV NEP5 ICO Token NEO .avm blockchain development dApp',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().

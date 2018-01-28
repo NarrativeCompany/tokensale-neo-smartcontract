@@ -7,6 +7,13 @@ Email: tom@neonexchange.org
 
 Date: Dec 11 2017
 
+Narrative Updates:
+
+Author: Brian Lenz
+Email: brian@narrative.network
+
+Date: Jan 27 2018
+
 """
 
 from boa.blockchain.vm.Neo.Runtime import GetTrigger, CheckWitness, Notify
