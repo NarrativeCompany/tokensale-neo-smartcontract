@@ -22,7 +22,7 @@ class Token:
 
     in_circulation_key = b'in_circulation'
 
-    total_supply = 197500000 * 100000000  # 197.5m total supply * 10^8 (decimals)
+    #supply_limit = 197500000 * 100000000  # 197.5m total supply * 10^8 (decimals)
     sale_token_limit = 50000000 * 100000000  # 50m tokens for sale * 10^8 (decimals)
 
     def crowdsale_available_amount(self):
@@ -40,7 +40,7 @@ class Token:
 
     def add_to_circulation(self, amount: int, storage: StorageAPI):
         """
-        Adds an amount of token to circlulation
+        Adds an amount of token to circulation
 
         :param amount: int the amount to add to circulation
         :param storage: StorageAPI A StorageAPI object for storage interaction
