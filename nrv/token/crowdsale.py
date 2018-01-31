@@ -124,9 +124,7 @@ class Crowdsale():
         if len(args) > 0:
             addr = args[0]
 
-            kyc_storage_key = concat(self.kyc_key, addr)
-
-            return storage.get(kyc_storage_key)
+            return self.get_kyc_status(addr, storage)
 
         return False
 
@@ -289,6 +287,8 @@ class Crowdsale():
 
             # if the total amount is less than the individual limit, they're good!
             if total_amount_contributed <= individual_limit:
+                # note that this method can be invoked during the Verification trigger, in which case
+                # this Storage.Put will be a no-op due to the read only behavior of the Verification trigger
                 storage.put(phase_key, total_amount_contributed)
                 return tokens
 
@@ -311,7 +311,7 @@ class Crowdsale():
         # lookup the current balance of the address
         current_balance = storage.get(to_address)
 
-        # add it to the the exchanged tokens and persist in storage
+        # add it to the exchanged tokens and persist in storage
         new_total = tokens + current_balance
         storage.put(to_address, new_total)
 

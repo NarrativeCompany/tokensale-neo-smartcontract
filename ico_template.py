@@ -86,8 +86,6 @@ def Main(operation, args):
                 storage = StorageAPI()
                 return token.get_circulation(storage)
 
-            # the following are handled by crowdsale
-
             sale = Crowdsale()
 
             if operation == 'mintTokens':
@@ -115,8 +113,8 @@ def Main(operation, args):
                 return sale.mint_rewards_tokens(token, args)
 
             if operation == 'change_owner':
-                owner = args[0]
-                return change_owner(token, owner)
+                new_owner = args[0]
+                return change_owner(token, new_owner)
 
             if operation == 'accept_owner':
                 return accept_owner(token)
@@ -160,7 +158,7 @@ def deploy(token: Token):
 
 def change_owner(token: Token, new_owner):
     """
-    Record a transfer request to a new owner. The new order must accept the request via accept_owner
+    Record a transfer request to a new owner. The new owner must accept the request via accept_owner
     :param token: Token The token to change the owner for
     :param new_owner: the new owner of the contract
     :return:
@@ -192,11 +190,12 @@ def cancel_change_owner(token: Token):
     """
     storage = StorageAPI()
 
-    owner = storage.get(token.owner_key)
-    if not owner:
-        print("Must change_owner before canceling owner change")
+    new_owner = storage.get(token.new_owner_key)
+    if not new_owner:
+        print("Can't cancel_change_owner unless an owner change is already pending")
         return False
 
+    owner = storage.get(token.owner_key)
     if not CheckWitness(owner):
         print("Must be owner to cancel change_owner")
         return False
@@ -234,6 +233,12 @@ def accept_owner(token: Token):
 
 
 def pause_sale(token: Token):
+    """
+    Pause the sale
+    :param token: Token The token of the sale to pause
+    :return:
+        bool: Whether the operation was successful
+    """
     storage = StorageAPI()
 
     # mark the sale as paused
@@ -243,6 +248,12 @@ def pause_sale(token: Token):
 
 
 def resume_sale(token: Token):
+    """
+    Resume the sale
+    :param token: Token The token of the sale to resume
+    :return:
+        bool: Whether the operation was successful
+    """
     storage = StorageAPI()
 
     # mark the sale as active
