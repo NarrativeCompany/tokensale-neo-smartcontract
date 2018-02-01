@@ -172,6 +172,10 @@ class NEP5Handler():
             print("Incorrect permission")
             return False
 
+        if amount < 0:
+            print("Negative amount")
+            return False
+
         from_balance = storage.get(t_owner)
 
         # cannot approve an amount that is
@@ -183,11 +187,10 @@ class NEP5Handler():
             if len(approval_key) != 40:
                 return False
 
-            current_approved_balance = storage.get(approval_key)
-
-            new_approved_balance = current_approved_balance + amount
-
-            storage.put(approval_key, new_approved_balance)
+            if amount == 0:
+                storage.delete(approval_key)
+            else:
+                storage.put(approval_key, amount)
 
             OnApprove(t_owner, t_spender, amount)
 
