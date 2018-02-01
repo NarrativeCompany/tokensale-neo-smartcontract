@@ -263,7 +263,7 @@ def resume_sale(token: Token):
 
     owner = storage.get(token.owner_key)
     if not CheckWitness(owner):
-        print("Must be owner to pause sale")
+        print("Must be owner to resume sale")
         return False
 
     # mark the sale as active
