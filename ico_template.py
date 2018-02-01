@@ -241,6 +241,11 @@ def pause_sale(token: Token):
     """
     storage = StorageAPI()
 
+    owner = storage.get(token.owner_key)
+    if not CheckWitness(owner):
+        print("Must be owner to pause sale")
+        return False
+
     # mark the sale as paused
     storage.put(token.sale_paused_key, True)
 
@@ -255,6 +260,11 @@ def resume_sale(token: Token):
         bool: Whether the operation was successful
     """
     storage = StorageAPI()
+
+    owner = storage.get(token.owner_key)
+    if not CheckWitness(owner):
+        print("Must be owner to pause sale")
+        return False
 
     # mark the sale as active
     storage.delete(token.sale_paused_key)
