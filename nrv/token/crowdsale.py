@@ -19,40 +19,35 @@ class Crowdsale():
     kyc_key = b'kyc_ok'
 
     # February 9, 2018 @ 9:00:00 pm UTC
-    #presale_end = 1518210000
-    presale_end = 1517467549
+    presale_end_block_key = b'pre_end'
     presale_phase_key = b'r1'
     presale_individual_limit = 1000 * 100000000
     presale_tokens_per_neo = 4000 * 100000000
     presale_minimum = 80 * 100000000
     presale_token_limit = 25000000 * 100000000  # 50% of 50m total supply = 25m * 10^8 (decimals)
 
+    # the number of blocks per day, assuming 23 seconds/block
+    # for testing, limit to 5 minutes
+    blocks_per_day = 13  # 5 * 60 / 23
+
     # February 13, 2018 @ 5:00:00 pm UTC
-    #day1_start = 1518541200
-    # 15-minute buffer between pre-sale and day 1 start
-    day1_start = 1517467749
+    pub_sale_start_block_key = b'pub_start'
     day1_phase_key = b'r2'
     day1_individual_limit = 100 * 100000000
     day1_tokens_per_neo = 3333 * 100000000
 
     # February 14, 2018 @ 5:00:00 pm UTC
-    #day2_start = 1518627600
-    # 15-minute day 1
-    day2_start = 1517467949
     day2_phase_key = b'r3'
     day2_individual_limit = 500 * 100000000
     day2_tokens_per_neo = 3150 * 100000000
 
     # February 15, 2018 @ 4:59:59 pm UTC
-    #day2_end = 1518713999
-    # 15-minute day 2
-    day2_end = 1517468149
-    sale_tokens_per_neo = 3000 * 100000000
+    sale_tokens_per_neo = 300 * 100000000
 
     # March 22, 2018 @ 5:00:00 pm UTC
-    #sale_end = 1521738000
-    # 15-minute main sale
-    sale_end = 1517468349
+    sale_end = 1521738000
+    # sale lasts 37 days. assume 23 seconds per block
+    sale_blocks = 52  # 20 * 60 / 23
 
     team_tokens_max = 20000000 * 100000000  # 20m team tokens * 10^8 (decimals)
     team_token_distribution_key = b'team_tokens'
@@ -67,6 +62,49 @@ class Crowdsale():
 
     rewards_fund_tokens_max = 97500000 * 100000000  # 97.5m tokens can be minted for the rewards fund * 10^8 (decimals)
     rewards_fund_token_distribution_key = b'rewards_fund'
+
+    def end_pre_sale(self, token: Token):
+        storage = StorageAPI()
+
+        owner = storage.get(token.owner_key)
+        if not CheckWitness(owner):
+            return False
+
+        presale_end_block = storage.get(self.presale_end_block_key)
+
+        if presale_end_block:
+            print("can't end the pre-sale twice")
+            return False
+
+        height = GetHeight()
+
+        storage.put(self.presale_end_block_key, height)
+
+        return True
+
+    def start_public_sale(self, token: Token):
+        storage = StorageAPI()
+
+        owner = storage.get(token.owner_key)
+        if not CheckWitness(owner):
+            return False
+
+        presale_end_block = storage.get(self.presale_end_block_key)
+        if not presale_end_block:
+            print("can't start the public sale until pre-sale has ended")
+            return False
+
+        pub_sale_start_block = storage.get(self.pub_sale_start_block_key)
+
+        if pub_sale_start_block:
+            print("can't start the public sale twice")
+            return False
+
+        height = GetHeight()
+
+        storage.put(self.pub_sale_start_block_key, height)
+
+        return True
 
     def kyc_register(self, args, token: Token):
         """
@@ -231,32 +269,17 @@ class Crowdsale():
         :return:
             int: Total amount of tokens to distribute, or 0 if this isn't a valid contribution
         """
-        time = self.now()
+        height = GetHeight()
 
-        if time > self.sale_end:
-            print("crowdsale ended")
-            return 0
+        storage = StorageAPI()
 
         # in all phases except the presale, the limit for tokens in circulation is the sale token limit of 50m
         tokens_in_circulation_limit = token.sale_token_limit
 
-        # if we are in main sale, post-day 2, then any contribution is allowed
-        if time > self.day2_end:
-            phase_key_prefix = None
-            individual_limit = -1
-            tokens_per_neo = self.sale_tokens_per_neo
-        elif time >= self.day2_start:
-            phase_key_prefix = self.day2_phase_key
-            individual_limit = self.day2_individual_limit
-            tokens_per_neo = self.day2_tokens_per_neo
-        elif time >= self.day1_start:
-            phase_key_prefix = self.day1_phase_key
-            individual_limit = self.day1_individual_limit
-            tokens_per_neo = self.day1_tokens_per_neo
-        elif time > self.presale_end:
-            print("presale over, main sale not started")
-            return 0
-        else:
+        presale_end_block = storage.get(self.presale_end_block_key)
+        pub_sale_start_block = storage.get(self.pub_sale_start_block_key)
+
+        if not presale_end_block:
             if neo_attached < self.presale_minimum:
                 print("insufficient presale contribution")
                 return 0
@@ -265,13 +288,30 @@ class Crowdsale():
             phase_key_prefix = self.presale_phase_key
             individual_limit = self.presale_individual_limit
             tokens_per_neo = self.presale_tokens_per_neo
+        elif not pub_sale_start_block:
+            print("presale over, main sale not started")
+            return 0
+        elif height > (pub_sale_start_block + self.sale_blocks):
+            print("crowdsale ended")
+            return 0
+        elif height > (pub_sale_start_block + (2*self.blocks_per_day)):
+            # if we are in main sale, post-day 2, then any contribution is allowed
+            phase_key_prefix = None
+            individual_limit = -1
+            tokens_per_neo = self.sale_tokens_per_neo
+        elif height > (pub_sale_start_block + self.blocks_per_day):
+            phase_key_prefix = self.day2_phase_key
+            individual_limit = self.day2_individual_limit
+            tokens_per_neo = self.day2_tokens_per_neo
+        else:
+            phase_key_prefix = self.day1_phase_key
+            individual_limit = self.day1_individual_limit
+            tokens_per_neo = self.day1_tokens_per_neo
 
         # this value will always be an int value, but is converted to float by the division. cast back to int, which should always be safe.
         # note that the neo_attached has a value mirroring GAS. so, even though NEO technically doesn't have any decimals of precision,
         # the value still needs to be divided to get down to the whole NEO unit
         tokens = neo_attached / 100000000 * tokens_per_neo
-
-        storage = StorageAPI()
 
         tokens_in_circulation = storage.get(token.in_circulation_key)
 
