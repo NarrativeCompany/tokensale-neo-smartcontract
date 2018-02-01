@@ -349,6 +349,7 @@ class Crowdsale():
 
         # no team token distribution until initial team vest date at the earliest
         if now < self.initial_team_vest_date:
+            print("can't transfer_team_tokens before vesting date")
             return False
 
         seconds_in_year = 31536000
@@ -372,6 +373,7 @@ class Crowdsale():
 
         # don't allow more than the max tokens to be distributed
         if team_tokens_distributed > max_token_distribution:
+            print("can't exceed transfer_team_tokens vesting limit")
             return False
 
         storage.put(self.team_token_distribution_key, team_tokens_distributed)
@@ -412,6 +414,7 @@ class Crowdsale():
 
         # no company token distribution until after the ICO ends
         if now < self.sale_end:
+            print("can't transfer_company_tokens before sale ends")
             return False
 
         # in the first year, allow 50% token distribution
@@ -430,6 +433,7 @@ class Crowdsale():
 
         # don't allow more than the max tokens to be distributed
         if company_tokens_distributed > max_token_distribution:
+            print("can't exceed transfer_company_tokens vesting limit")
             return False
 
         storage.put(self.company_token_distribution_key, company_tokens_distributed)
@@ -468,6 +472,7 @@ class Crowdsale():
 
         # no minting rewards tokens until after the token sale ends
         if now < self.sale_end:
+            print("can't mint_rewards_tokens before sale ends")
             return False
 
         rewards_fund_tokens_distributed = storage.get(self.rewards_fund_token_distribution_key)
@@ -476,6 +481,7 @@ class Crowdsale():
 
         # don't allow more than the max tokens to be distributed
         if rewards_fund_tokens_distributed > self.rewards_fund_tokens_max:
+            print("can't exceed mint_rewards_tokens limit")
             return False
 
         storage.put(self.rewards_fund_token_distribution_key, rewards_fund_tokens_distributed)
