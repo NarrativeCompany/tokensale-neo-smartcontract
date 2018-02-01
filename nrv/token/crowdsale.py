@@ -45,7 +45,7 @@ class Crowdsale():
     sale_tokens_per_neo = 300 * 100000000
 
     # March 22, 2018 @ 5:00:00 pm UTC
-    sale_end = 1521738000
+    sale_end = 1517522400
     # sale lasts 37 days. assume 23 seconds per block
     sale_blocks = 52  # 20 * 60 / 23
 
@@ -55,7 +55,7 @@ class Crowdsale():
     # January 1, 2019 00:00 UTC
     #initial_team_vest_date = 1546300800
     # 15-minute team vesting
-    initial_team_vest_date = 1517468549
+    initial_team_vest_date = 1517523300
 
     company_tokens_max = 30000000 * 100000000  # 30m company tokens * 10^8 (decimals)
     company_token_distribution_key = b'company_tokens'
