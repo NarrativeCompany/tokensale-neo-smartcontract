@@ -122,6 +122,12 @@ def Main(operation, args):
             if operation == 'cancel_change_owner':
                 return cancel_change_owner(token)
 
+            if operation == 'end_pre_sale':
+                return sale.end_pre_sale(token)
+
+            if operation == 'start_public_sale':
+                return sale.start_public_sale(token)
+
             if operation == 'pause_sale':
                 return pause_sale(token)
 
