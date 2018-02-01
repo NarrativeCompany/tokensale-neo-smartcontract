@@ -19,37 +19,48 @@ class Crowdsale():
     kyc_key = b'kyc_ok'
 
     # February 9, 2018 @ 9:00:00 pm UTC
-    presale_end = 1518210000
+    #presale_end = 1518210000
+    presale_end = 1517467549
     presale_phase_key = b'r1'
-    presale_individual_limit = 3000 * 100000000
-    presale_tokens_per_neo = 400 * 100000000
-    presale_minimum = 800 * 100000000
+    presale_individual_limit = 1000 * 100000000
+    presale_tokens_per_neo = 4000 * 100000000
+    presale_minimum = 80 * 100000000
     presale_token_limit = 25000000 * 100000000  # 50% of 50m total supply = 25m * 10^8 (decimals)
 
     # February 13, 2018 @ 5:00:00 pm UTC
-    day1_start = 1518541200
+    #day1_start = 1518541200
+    # 15-minute buffer between pre-sale and day 1 start
+    day1_start = 1517467749
     day1_phase_key = b'r2'
-    day1_individual_limit = 300 * 100000000
-    day1_tokens_per_neo = 333 * 100000000
+    day1_individual_limit = 100 * 100000000
+    day1_tokens_per_neo = 3333 * 100000000
 
     # February 14, 2018 @ 5:00:00 pm UTC
-    day2_start = 1518627600
+    #day2_start = 1518627600
+    # 15-minute day 1
+    day2_start = 1517467949
     day2_phase_key = b'r3'
-    day2_individual_limit = 1000 * 100000000
-    day2_tokens_per_neo = 315 * 100000000
+    day2_individual_limit = 500 * 100000000
+    day2_tokens_per_neo = 3150 * 100000000
 
     # February 15, 2018 @ 4:59:59 pm UTC
-    day2_end = 1518713999
-    sale_tokens_per_neo = 300 * 100000000
+    #day2_end = 1518713999
+    # 15-minute day 2
+    day2_end = 1517468149
+    sale_tokens_per_neo = 3000 * 100000000
 
     # March 22, 2018 @ 5:00:00 pm UTC
-    sale_end = 1521738000
+    #sale_end = 1521738000
+    # 15-minute main sale
+    sale_end = 1517468349
 
     team_tokens_max = 20000000 * 100000000  # 20m team tokens * 10^8 (decimals)
     team_token_distribution_key = b'team_tokens'
 
     # January 1, 2019 00:00 UTC
-    initial_team_vest_date = 1546300800
+    #initial_team_vest_date = 1546300800
+    # 15-minute team vesting
+    initial_team_vest_date = 1517468549
 
     company_tokens_max = 30000000 * 100000000  # 30m company tokens * 10^8 (decimals)
     company_token_distribution_key = b'company_tokens'
@@ -352,7 +363,9 @@ class Crowdsale():
             print("can't transfer_team_tokens before vesting date")
             return False
 
-        seconds_in_year = 31536000
+        #seconds_in_year = 31536000
+        # 10 minutes between vesting years
+        seconds_in_year = 600
 
         # in the first year, allow 30% token distribution
         if now < (self.initial_team_vest_date + seconds_in_year):
@@ -410,7 +423,9 @@ class Crowdsale():
 
         now = self.now()
 
-        seconds_in_year = 31536000
+        #seconds_in_year = 31536000
+        # 10 minutes between vesting years
+        seconds_in_year = 600
 
         # no company token distribution until after the ICO ends
         if now < self.sale_end:
