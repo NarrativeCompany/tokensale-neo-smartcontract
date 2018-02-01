@@ -18,6 +18,7 @@ Date: Jan 27 2018
 
 from boa.blockchain.vm.Neo.Runtime import GetTrigger, CheckWitness, Notify
 from boa.blockchain.vm.Neo.TriggerType import Application, Verification
+from boa.blockchain.vm.Neo.Contract import Migrate,Destroy
 from nrv.common.storage import StorageAPI
 from nrv.common.txio import Attachments,get_asset_attachments
 from nrv.token.nrvtoken import Token
@@ -127,6 +128,9 @@ def Main(operation, args):
 
             if operation == 'resume_sale':
                 return resume_sale(token)
+
+            if operation == 'migrate':
+                return migrate(token, args)
 
             return 'unknown operation'
 
@@ -268,5 +272,42 @@ def resume_sale(token: Token):
 
     # mark the sale as active
     storage.delete(token.sale_paused_key)
+
+    return True
+
+def migrate(token: Token, args):
+    """
+    Migrate this contract data to a new smart contract and destroy the current contract to avoid ambiguity. Needed for critical fixes.
+    :param token: Token The token of the sale to resume
+    :param args: the arguments for the new smart contract
+    :return:
+        bool: Whether the operation was successful
+    """
+    storage = StorageAPI()
+    owner = storage.get(token.owner_key)
+
+    if CheckWitness(owner):
+        return False
+
+    new_script = args[0]
+    # todo: it seems the name isn't supported by neo-boa's Migrate??
+    # refer: https://github.com/CityOfZion/neo-boa/issues/37
+    new_name = args[1]
+    new_version = args[2]
+    new_author = args[3]
+    new_email = args[4]
+    new_description = args[5]
+    parameter_list = args[6]
+    return_type = args[7]
+    Notify('Starting Migration')
+
+    Migrate(new_script, parameter_list, return_type, True, new_version, new_author, new_email, new_description)
+
+    Notify('Migration Complete')
+
+    # todo: is this Destroy technically necessary? note that the contract arg is ignored, too
+    #Destroy()
+
+    Notify('Original Contract Destroyed')
 
     return True
