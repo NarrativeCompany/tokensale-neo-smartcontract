@@ -6,7 +6,7 @@ class Token:
     Basic settings for an NEP5 Token and crowdsale
     """
 
-    name = 'Narrative'
+    name = 'Narrative Token'
 
     symbol = 'NRV'
 

@@ -191,10 +191,6 @@ class Crowdsale():
 
         storage = StorageAPI()
 
-        # don't allow any contributions if the sale is paused (can't purely rely on Verification to do this check since Verification may not occur)
-        if storage.get(token.sale_paused_key):
-            return False
-
         # this looks up whether the exchange can proceed
         tokens = self.check_and_calculate_tokens(token, attachments, storage)
 
@@ -229,6 +225,10 @@ class Crowdsale():
         :return:
             int: Total amount of tokens to distribute, or 0 if this isn't a valid contribution
         """
+
+        # don't allow any contributions if the sale is paused
+        if storage.get(token.sale_paused_key):
+            return False
 
         if attachments.neo_attached == 0:
             print("no neo attached")
