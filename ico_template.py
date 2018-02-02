@@ -44,10 +44,6 @@ def Main(operation, args):
 
         storage = StorageAPI()
 
-        # don't allow any contributions if the sale is paused
-        if storage.get(token.sale_paused_key):
-            return False
-
         owner = storage.get(token.owner_key)
 
         if owner:
