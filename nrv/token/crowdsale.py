@@ -27,8 +27,8 @@ class Crowdsale():
     presale_token_limit = 25000000 * 100000000  # 50% of 50m total supply = 25m * 10^8 (decimals)
 
     # the number of blocks per day, assuming 23 seconds/block
-    # for testing, limit to 10 minutes
-    blocks_per_day = 26  # 10 * 60 / 23
+    # for testing, limit to 15 minutes
+    blocks_per_day = 39  # 15 * 60 / 23
 
     # February 13, 2018 @ 5:00:00 pm UTC
     pub_sale_start_block_key = b'pub_start'
@@ -45,19 +45,19 @@ class Crowdsale():
     sale_tokens_per_neo = 3000 * 100000000
 
     # March 22, 2018 @ 5:00:00 pm UTC
-    # February 1, 2018 @ 3:30:00 pm
-    sale_end = 1517527800
+    # February 2, 2018 @ 2:30:00 pm
+    sale_end = 1517610600
     # sale lasts 37 days. assume 23 seconds per block
-    sale_blocks = 78  # 30 * 60 / 23
+    sale_blocks = 117  # 45 * 60 / 23
 
     team_tokens_max = 20000000 * 100000000  # 20m team tokens * 10^8 (decimals)
     team_token_distribution_key = b'team_tokens'
 
     # January 1, 2019 00:00 UTC
     #initial_team_vest_date = 1546300800
-    # 15-minute team vesting
-    # February 1, 2018 @ 3:40:00 pm
-    initial_team_vest_date = 1517528400
+    # 10-minute team vesting
+    # February 2, 2018 @ 2:40:00 pm
+    initial_team_vest_date = 1517611200
 
     company_tokens_max = 30000000 * 100000000  # 30m company tokens * 10^8 (decimals)
     company_token_distribution_key = b'company_tokens'
