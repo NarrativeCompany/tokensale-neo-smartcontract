@@ -21,33 +21,34 @@ class Crowdsale():
     # February 9, 2018 @ 9:00:00 pm UTC
     presale_end_block_key = b'pre_end'
     presale_phase_key = b'r1'
-    presale_individual_limit = 1000 * 100000000
+    presale_individual_limit = 3000 * 100000000
     presale_tokens_per_neo = 4000 * 100000000
     presale_minimum = 80 * 100000000
     presale_token_limit = 25000000 * 100000000  # 50% of 50m total supply = 25m * 10^8 (decimals)
 
     # the number of blocks per day, assuming 23 seconds/block
-    # for testing, limit to 5 minutes
-    blocks_per_day = 13  # 5 * 60 / 23
+    # for testing, limit to 10 minutes
+    blocks_per_day = 26  # 10 * 60 / 23
 
     # February 13, 2018 @ 5:00:00 pm UTC
     pub_sale_start_block_key = b'pub_start'
     day1_phase_key = b'r2'
-    day1_individual_limit = 100 * 100000000
+    day1_individual_limit = 1000 * 100000000
     day1_tokens_per_neo = 3333 * 100000000
 
     # February 14, 2018 @ 5:00:00 pm UTC
     day2_phase_key = b'r3'
-    day2_individual_limit = 500 * 100000000
+    day2_individual_limit = 2000 * 100000000
     day2_tokens_per_neo = 3150 * 100000000
 
     # February 15, 2018 @ 4:59:59 pm UTC
-    sale_tokens_per_neo = 300 * 100000000
+    sale_tokens_per_neo = 3000 * 100000000
 
     # March 22, 2018 @ 5:00:00 pm UTC
-    sale_end = 1517522400
+    # February 1, 2018 @ 3:30:00 pm
+    sale_end = 1517527800
     # sale lasts 37 days. assume 23 seconds per block
-    sale_blocks = 52  # 20 * 60 / 23
+    sale_blocks = 78  # 30 * 60 / 23
 
     team_tokens_max = 20000000 * 100000000  # 20m team tokens * 10^8 (decimals)
     team_token_distribution_key = b'team_tokens'
@@ -55,7 +56,8 @@ class Crowdsale():
     # January 1, 2019 00:00 UTC
     #initial_team_vest_date = 1546300800
     # 15-minute team vesting
-    initial_team_vest_date = 1517523300
+    # February 1, 2018 @ 3:40:00 pm
+    initial_team_vest_date = 1517528400
 
     company_tokens_max = 30000000 * 100000000  # 30m company tokens * 10^8 (decimals)
     company_token_distribution_key = b'company_tokens'
