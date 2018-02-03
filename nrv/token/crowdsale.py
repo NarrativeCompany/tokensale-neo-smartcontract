@@ -223,7 +223,7 @@ class Crowdsale():
 
         # don't allow any contributions if the sale is paused
         if storage.get(token.sale_paused_key):
-            return False
+            return 0
 
         if attachments.neo_attached == 0:
             print("no neo attached")
