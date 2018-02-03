@@ -5,6 +5,7 @@ from boa.code.builtins import concat
 from nrv.token.nrvtoken import Token
 from nrv.common.storage import StorageAPI
 from nrv.common.txio import Attachments,get_asset_attachments
+from nrv.common.time import get_now
 
 OnTransfer = RegisterAction('transfer', 'from', 'to', 'amount')
 OnContribution = RegisterAction('contribution', 'from', 'neo', 'tokens')
@@ -19,31 +20,34 @@ class Crowdsale():
     kyc_key = b'kyc_ok'
 
     # February 9, 2018 @ 9:00:00 pm UTC
-    presale_end = 1518210000
+    presale_end_block_key = b'pre_end'
     presale_phase_key = b'r1'
     presale_individual_limit = 3000 * 100000000
     presale_tokens_per_neo = 400 * 100000000
     presale_minimum = 800 * 100000000
     presale_token_limit = 25000000 * 100000000  # 50% of 50m total supply = 25m * 10^8 (decimals)
 
+    # the number of blocks per day, assuming 23 seconds/block
+    blocks_per_day = 3757  # 24 * 60 * 60 / 23
+
     # February 13, 2018 @ 5:00:00 pm UTC
-    day1_start = 1518541200
+    pub_sale_start_block_key = b'pub_start'
     day1_phase_key = b'r2'
     day1_individual_limit = 300 * 100000000
     day1_tokens_per_neo = 333 * 100000000
 
     # February 14, 2018 @ 5:00:00 pm UTC
-    day2_start = 1518627600
     day2_phase_key = b'r3'
     day2_individual_limit = 1000 * 100000000
     day2_tokens_per_neo = 315 * 100000000
 
     # February 15, 2018 @ 4:59:59 pm UTC
-    day2_end = 1518713999
     sale_tokens_per_neo = 300 * 100000000
 
     # March 22, 2018 @ 5:00:00 pm UTC
     sale_end = 1521738000
+    # sale lasts 37 days. assume 23 seconds per block
+    sale_blocks = 138992  # 37 * 24 * 60 * 60 / 23
 
     team_tokens_max = 20000000 * 100000000  # 20m team tokens * 10^8 (decimals)
     team_token_distribution_key = b'team_tokens'
@@ -56,6 +60,49 @@ class Crowdsale():
 
     rewards_fund_tokens_max = 97500000 * 100000000  # 97.5m tokens can be minted for the rewards fund * 10^8 (decimals)
     rewards_fund_token_distribution_key = b'rewards_fund'
+
+    def end_pre_sale(self, token: Token):
+        storage = StorageAPI()
+
+        owner = storage.get(token.owner_key)
+        if not CheckWitness(owner):
+            return False
+
+        presale_end_block = storage.get(self.presale_end_block_key)
+
+        if presale_end_block:
+            print("can't end the pre-sale twice")
+            return False
+
+        height = GetHeight()
+
+        storage.put(self.presale_end_block_key, height)
+
+        return True
+
+    def start_public_sale(self, token: Token):
+        storage = StorageAPI()
+
+        owner = storage.get(token.owner_key)
+        if not CheckWitness(owner):
+            return False
+
+        presale_end_block = storage.get(self.presale_end_block_key)
+        if not presale_end_block:
+            print("can't start the public sale until pre-sale has ended")
+            return False
+
+        pub_sale_start_block = storage.get(self.pub_sale_start_block_key)
+
+        if pub_sale_start_block:
+            print("can't start the public sale twice")
+            return False
+
+        height = GetHeight()
+
+        storage.put(self.pub_sale_start_block_key, height)
+
+        return True
 
     def kyc_register(self, args, token: Token):
         """
@@ -140,10 +187,6 @@ class Crowdsale():
 
         storage = StorageAPI()
 
-        # don't allow any contributions if the sale is paused (can't purely rely on Verification to do this check since Verification may not occur)
-        if storage.get(token.sale_paused_key):
-            return False
-
         # this looks up whether the exchange can proceed
         tokens = self.check_and_calculate_tokens(token, attachments, storage)
 
@@ -178,6 +221,10 @@ class Crowdsale():
         :return:
             int: Total amount of tokens to distribute, or 0 if this isn't a valid contribution
         """
+
+        # don't allow any contributions if the sale is paused
+        if storage.get(token.sale_paused_key):
+            return 0
 
         if attachments.neo_attached == 0:
             print("no neo attached")
@@ -220,32 +267,17 @@ class Crowdsale():
         :return:
             int: Total amount of tokens to distribute, or 0 if this isn't a valid contribution
         """
-        time = self.now()
+        height = GetHeight()
 
-        if time > self.sale_end:
-            print("crowdsale ended")
-            return 0
+        storage = StorageAPI()
 
         # in all phases except the presale, the limit for tokens in circulation is the sale token limit of 50m
         tokens_in_circulation_limit = token.sale_token_limit
 
-        # if we are in main sale, post-day 2, then any contribution is allowed
-        if time > self.day2_end:
-            phase_key_prefix = None
-            individual_limit = -1
-            tokens_per_neo = self.sale_tokens_per_neo
-        elif time >= self.day2_start:
-            phase_key_prefix = self.day2_phase_key
-            individual_limit = self.day2_individual_limit
-            tokens_per_neo = self.day2_tokens_per_neo
-        elif time >= self.day1_start:
-            phase_key_prefix = self.day1_phase_key
-            individual_limit = self.day1_individual_limit
-            tokens_per_neo = self.day1_tokens_per_neo
-        elif time > self.presale_end:
-            print("presale over, main sale not started")
-            return 0
-        else:
+        presale_end_block = storage.get(self.presale_end_block_key)
+        pub_sale_start_block = storage.get(self.pub_sale_start_block_key)
+
+        if not presale_end_block:
             if neo_attached < self.presale_minimum:
                 print("insufficient presale contribution")
                 return 0
@@ -254,13 +286,30 @@ class Crowdsale():
             phase_key_prefix = self.presale_phase_key
             individual_limit = self.presale_individual_limit
             tokens_per_neo = self.presale_tokens_per_neo
+        elif not pub_sale_start_block:
+            print("presale over, main sale not started")
+            return 0
+        elif height > (pub_sale_start_block + self.sale_blocks):
+            print("crowdsale ended")
+            return 0
+        elif height > (pub_sale_start_block + (2*self.blocks_per_day)):
+            # if we are in main sale, post-day 2, then any contribution is allowed
+            phase_key_prefix = None
+            individual_limit = -1
+            tokens_per_neo = self.sale_tokens_per_neo
+        elif height > (pub_sale_start_block + self.blocks_per_day):
+            phase_key_prefix = self.day2_phase_key
+            individual_limit = self.day2_individual_limit
+            tokens_per_neo = self.day2_tokens_per_neo
+        else:
+            phase_key_prefix = self.day1_phase_key
+            individual_limit = self.day1_individual_limit
+            tokens_per_neo = self.day1_tokens_per_neo
 
         # this value will always be an int value, but is converted to float by the division. cast back to int, which should always be safe.
         # note that the neo_attached has a value mirroring GAS. so, even though NEO technically doesn't have any decimals of precision,
         # the value still needs to be divided to get down to the whole NEO unit
         tokens = neo_attached / 100000000 * tokens_per_neo
-
-        storage = StorageAPI()
 
         tokens_in_circulation = storage.get(token.in_circulation_key)
 
@@ -345,10 +394,11 @@ class Crowdsale():
         if tokens <= 0:
             return False
 
-        now = self.now()
+        now = get_now()
 
         # no team token distribution until initial team vest date at the earliest
         if now < self.initial_team_vest_date:
+            print("can't transfer_team_tokens before vesting date")
             return False
 
         seconds_in_year = 31536000
@@ -372,13 +422,33 @@ class Crowdsale():
 
         # don't allow more than the max tokens to be distributed
         if team_tokens_distributed > max_token_distribution:
+            print("can't exceed transfer_team_tokens vesting limit")
             return False
 
         storage.put(self.team_token_distribution_key, team_tokens_distributed)
 
         attachments = get_asset_attachments()  # type:  Attachments
 
-        self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        #self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        from_address = attachments.receiver_addr
+        to_address = address
+
+        # bl: the following is an exact copy of the mint_tokens function. invoking self.mint_tokens will break the
+        # execution of this method due to a neo-boa compiler issue. this results in a lot of code duplication,
+        # but it's preferable to the alternative of a broken smart contract. refer: https://github.com/CityOfZion/neo-boa/issues/40
+
+        # lookup the current balance of the address
+        current_balance = storage.get(to_address)
+
+        # add it to the exchanged tokens and persist in storage
+        new_total = tokens + current_balance
+        storage.put(to_address, new_total)
+
+        # update the in circulation amount
+        token.add_to_circulation(tokens, storage)
+
+        # dispatch transfer event
+        OnTransfer(from_address, to_address, tokens)
 
         return True
 
@@ -406,12 +476,13 @@ class Crowdsale():
         if tokens <= 0:
             return False
 
-        now = self.now()
+        now = get_now()
 
         seconds_in_year = 31536000
 
         # no company token distribution until after the ICO ends
         if now < self.sale_end:
+            print("can't transfer_company_tokens before sale ends")
             return False
 
         # in the first year, allow 50% token distribution
@@ -430,13 +501,33 @@ class Crowdsale():
 
         # don't allow more than the max tokens to be distributed
         if company_tokens_distributed > max_token_distribution:
+            print("can't exceed transfer_company_tokens vesting limit")
             return False
 
         storage.put(self.company_token_distribution_key, company_tokens_distributed)
 
         attachments = get_asset_attachments()  # type:  Attachments
 
-        self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        #self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        from_address = attachments.receiver_addr
+        to_address = address
+
+        # bl: the following is an exact copy of the mint_tokens function. invoking self.mint_tokens will break the
+        # execution of this method due to a neo-boa compiler issue. this results in a lot of code duplication,
+        # but it's preferable to the alternative of a broken smart contract. refer: https://github.com/CityOfZion/neo-boa/issues/40
+
+        # lookup the current balance of the address
+        current_balance = storage.get(to_address)
+
+        # add it to the exchanged tokens and persist in storage
+        new_total = tokens + current_balance
+        storage.put(to_address, new_total)
+
+        # update the in circulation amount
+        token.add_to_circulation(tokens, storage)
+
+        # dispatch transfer event
+        OnTransfer(from_address, to_address, tokens)
 
         return True
 
@@ -464,10 +555,11 @@ class Crowdsale():
         if tokens <= 0:
             return False
 
-        now = self.now()
+        now = get_now()
 
         # no minting rewards tokens until after the token sale ends
         if now < self.sale_end:
+            print("can't mint_rewards_tokens before sale ends")
             return False
 
         rewards_fund_tokens_distributed = storage.get(self.rewards_fund_token_distribution_key)
@@ -476,18 +568,32 @@ class Crowdsale():
 
         # don't allow more than the max tokens to be distributed
         if rewards_fund_tokens_distributed > self.rewards_fund_tokens_max:
+            print("can't exceed mint_rewards_tokens limit")
             return False
 
         storage.put(self.rewards_fund_token_distribution_key, rewards_fund_tokens_distributed)
 
         attachments = get_asset_attachments()  # type:  Attachments
 
-        self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        #self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        from_address = attachments.receiver_addr
+        to_address = address
+
+        # bl: the following is an exact copy of the mint_tokens function. invoking self.mint_tokens will break the
+        # execution of this method due to a neo-boa compiler issue. this results in a lot of code duplication,
+        # but it's preferable to the alternative of a broken smart contract. refer: https://github.com/CityOfZion/neo-boa/issues/40
+
+        # lookup the current balance of the address
+        current_balance = storage.get(to_address)
+
+        # add it to the exchanged tokens and persist in storage
+        new_total = tokens + current_balance
+        storage.put(to_address, new_total)
+
+        # update the in circulation amount
+        token.add_to_circulation(tokens, storage)
+
+        # dispatch transfer event
+        OnTransfer(from_address, to_address, tokens)
 
         return True
-
-    @staticmethod
-    def now():
-        height = GetHeight()
-        current_block = GetHeader(height)
-        return current_block.Timestamp

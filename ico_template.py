@@ -45,10 +45,6 @@ def Main(operation, args):
 
         storage = StorageAPI()
 
-        # don't allow any contributions if the sale is paused
-        if storage.get(token.sale_paused_key):
-            return False
-
         owner = storage.get(token.owner_key)
 
         if owner:
@@ -122,6 +118,12 @@ def Main(operation, args):
 
             if operation == 'cancel_change_owner':
                 return cancel_change_owner(token)
+
+            if operation == 'end_pre_sale':
+                return sale.end_pre_sale(token)
+
+            if operation == 'start_public_sale':
+                return sale.start_public_sale(token)
 
             if operation == 'pause_sale':
                 return pause_sale(token)
@@ -267,7 +269,7 @@ def resume_sale(token: Token):
 
     owner = storage.get(token.owner_key)
     if not CheckWitness(owner):
-        print("Must be owner to pause sale")
+        print("Must be owner to resume sale")
         return False
 
     # mark the sale as active
