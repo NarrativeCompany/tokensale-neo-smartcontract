@@ -5,6 +5,7 @@ from boa.code.builtins import concat
 from nrv.token.nrvtoken import Token
 from nrv.common.storage import StorageAPI
 from nrv.common.txio import Attachments,get_asset_attachments
+from nrv.common.time import get_now
 
 OnTransfer = RegisterAction('transfer', 'from', 'to', 'amount')
 OnContribution = RegisterAction('contribution', 'from', 'neo', 'tokens')
@@ -228,7 +229,7 @@ class Crowdsale():
 
         # don't allow any contributions if the sale is paused
         if storage.get(token.sale_paused_key):
-            return False
+            return 0
 
         if attachments.neo_attached == 0:
             print("no neo attached")
@@ -398,7 +399,7 @@ class Crowdsale():
         if tokens <= 0:
             return False
 
-        now = self.now()
+        now = get_now()
 
         # no team token distribution until initial team vest date at the earliest
         if now < self.initial_team_vest_date:
@@ -435,7 +436,26 @@ class Crowdsale():
 
         attachments = get_asset_attachments()  # type:  Attachments
 
-        self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        #self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        from_address = attachments.receiver_addr
+        to_address = address
+
+        # bl: the following is an exact copy of the mint_tokens function. invoking self.mint_tokens will break the
+        # execution of this method due to a neo-boa compiler issue. this results in a lot of code duplication,
+        # but it's preferable to the alternative of a broken smart contract. refer: https://github.com/CityOfZion/neo-boa/issues/40
+
+        # lookup the current balance of the address
+        current_balance = storage.get(to_address)
+
+        # add it to the exchanged tokens and persist in storage
+        new_total = tokens + current_balance
+        storage.put(to_address, new_total)
+
+        # update the in circulation amount
+        token.add_to_circulation(tokens, storage)
+
+        # dispatch transfer event
+        OnTransfer(from_address, to_address, tokens)
 
         return True
 
@@ -463,7 +483,7 @@ class Crowdsale():
         if tokens <= 0:
             return False
 
-        now = self.now()
+        now = get_now()
 
         #seconds_in_year = 31536000
         # 10 minutes between vesting years
@@ -497,7 +517,26 @@ class Crowdsale():
 
         attachments = get_asset_attachments()  # type:  Attachments
 
-        self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        #self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        from_address = attachments.receiver_addr
+        to_address = address
+
+        # bl: the following is an exact copy of the mint_tokens function. invoking self.mint_tokens will break the
+        # execution of this method due to a neo-boa compiler issue. this results in a lot of code duplication,
+        # but it's preferable to the alternative of a broken smart contract. refer: https://github.com/CityOfZion/neo-boa/issues/40
+
+        # lookup the current balance of the address
+        current_balance = storage.get(to_address)
+
+        # add it to the exchanged tokens and persist in storage
+        new_total = tokens + current_balance
+        storage.put(to_address, new_total)
+
+        # update the in circulation amount
+        token.add_to_circulation(tokens, storage)
+
+        # dispatch transfer event
+        OnTransfer(from_address, to_address, tokens)
 
         return True
 
@@ -525,7 +564,7 @@ class Crowdsale():
         if tokens <= 0:
             return False
 
-        now = self.now()
+        now = get_now()
 
         # no minting rewards tokens until after the token sale ends
         if now < self.sale_end:
@@ -545,12 +584,25 @@ class Crowdsale():
 
         attachments = get_asset_attachments()  # type:  Attachments
 
-        self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        #self.mint_tokens(token, attachments.receiver_addr, address, tokens, storage)
+        from_address = attachments.receiver_addr
+        to_address = address
+
+        # bl: the following is an exact copy of the mint_tokens function. invoking self.mint_tokens will break the
+        # execution of this method due to a neo-boa compiler issue. this results in a lot of code duplication,
+        # but it's preferable to the alternative of a broken smart contract. refer: https://github.com/CityOfZion/neo-boa/issues/40
+
+        # lookup the current balance of the address
+        current_balance = storage.get(to_address)
+
+        # add it to the exchanged tokens and persist in storage
+        new_total = tokens + current_balance
+        storage.put(to_address, new_total)
+
+        # update the in circulation amount
+        token.add_to_circulation(tokens, storage)
+
+        # dispatch transfer event
+        OnTransfer(from_address, to_address, tokens)
 
         return True
-
-    @staticmethod
-    def now():
-        height = GetHeight()
-        current_block = GetHeader(height)
-        return current_block.Timestamp
