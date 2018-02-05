@@ -341,8 +341,9 @@ class Crowdsale():
             # if the total amount is less than the individual limit, they're good!
             if total_amount_contributed <= individual_limit:
                 # note that this method can be invoked during the Verification trigger, so we have the
-                # verify_only param to avoid the Storage.Put during the read-only Verification trigger
-                # this works around a "method Neo.Storage.Put not found in" error in InteropService.py
+                # verify_only param to avoid the Storage.Put during the read-only Verification trigger.
+                # this works around a "method Neo.Storage.Put not found in ->" error in InteropService.py
+                # since Verification is read-only and thus uses a StateReader, not a StateMachine
                 if not verify_only:
                     storage.put(phase_key, total_amount_contributed)
                 return tokens
