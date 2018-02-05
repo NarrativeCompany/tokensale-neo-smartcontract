@@ -64,7 +64,7 @@ def Main(operation, args):
 
         # the exchange will be allowed if the number of tokens to convert to is greater than zero.
         # zero indicates that there is a reason this contribution will not be allowed
-        return crowdsale.check_and_calculate_tokens(token, attachments, storage) > 0
+        return crowdsale.check_and_calculate_tokens(token, attachments, storage, True) > 0
 
     elif trigger == Application:
 
