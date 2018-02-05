@@ -188,7 +188,7 @@ class Crowdsale():
         storage = StorageAPI()
 
         # this looks up whether the exchange can proceed
-        tokens = self.check_and_calculate_tokens(token, attachments, storage)
+        tokens = self.check_and_calculate_tokens(token, attachments, storage, False)
 
         if tokens <= 0:
             print("Cannot exchange value")
@@ -206,7 +206,7 @@ class Crowdsale():
 
         return True
 
-    def check_and_calculate_tokens(self, token: Token, attachments: Attachments, storage: StorageAPI):
+    def check_and_calculate_tokens(self, token: Token, attachments: Attachments, storage: StorageAPI, verify_only: bool):
         """
         Determines if the contract invocation meets all requirements for the ICO exchange
         of neo into NEP5 Tokens.
@@ -218,6 +218,8 @@ class Crowdsale():
         :param token: Token A token object with your ICO settings
         :param attachments: Attachments An attachments object with information about attached NEO/Gas assets
         :param storage: StorageAPI A StorageAPI object for storage interaction
+        :param verify_only: boolean to indicate whether we are only verifying the tx.
+               when verifying, we will skip any put side effects.
         :return:
             int: Total amount of tokens to distribute, or 0 if this isn't a valid contribution
         """
@@ -242,7 +244,7 @@ class Crowdsale():
         #    print("KYC approved")
         j = 0
 
-        return self.calculate_tokens(token, attachments.neo_attached, attachments.sender_addr)
+        return self.calculate_tokens(token, attachments.neo_attached, attachments.sender_addr, verify_only)
 
     def get_kyc_status(self, address, storage: StorageAPI):
         """
@@ -257,13 +259,15 @@ class Crowdsale():
 
         return storage.get(kyc_storage_key)
 
-    def calculate_tokens(self, token: Token, neo_attached: int, address):
+    def calculate_tokens(self, token: Token, neo_attached: int, address, verify_only: bool):
         """
         Perform custom token exchange calculations here.
 
         :param token: Token The token settings for the sale
         :param neo_attached: int Number of NEO to convert to tokens
         :param address: bytearray The address to mint the tokens to
+        :param verify_only: boolean to indicate whether we are only verifying the tx.
+               when verifying, we will skip any put side effects.
         :return:
             int: Total amount of tokens to distribute, or 0 if this isn't a valid contribution
         """
@@ -336,9 +340,11 @@ class Crowdsale():
 
             # if the total amount is less than the individual limit, they're good!
             if total_amount_contributed <= individual_limit:
-                # note that this method can be invoked during the Verification trigger, in which case
-                # this Storage.Put will be a no-op due to the read only behavior of the Verification trigger
-                storage.put(phase_key, total_amount_contributed)
+                # note that this method can be invoked during the Verification trigger, so we have the
+                # verify_only param to avoid the Storage.Put during the read-only Verification trigger
+                # this works around a "method Neo.Storage.Put not found in" error in InteropService.py
+                if not verify_only:
+                    storage.put(phase_key, total_amount_contributed)
                 return tokens
 
             print("contribution limit exceeded in round")
