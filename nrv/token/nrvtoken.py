@@ -14,7 +14,7 @@ class Token:
 
     # This is the script hash of the address for the owner of the token
     # This can be found in ``neo-python`` with the wallet open, use ``wallet`` command
-    original_owner = b'#\xba\'\x03\xc52c\xe8\xd6\xe5"\xdc2 39\xdc\xd8\xee\xe9'
+    original_owner = b'\xf0\x8a\xb3z\xa8\x88\xa4J\x8a\xba\xb5\x1b\xb2\x92r{\t;\xb1\xdf'
 
     owner_key = b'owner'
     new_owner_key = b'new_owner'
