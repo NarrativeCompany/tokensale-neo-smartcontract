@@ -39,6 +39,9 @@ class Token:
 
         available = self.sale_token_limit - in_circ
 
+        if available < 0:
+            return 0
+
         return available
 
     def add_to_circulation(self, amount: int, storage: StorageAPI):
