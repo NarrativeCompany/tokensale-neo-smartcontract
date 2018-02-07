@@ -1,7 +1,7 @@
 from boa.blockchain.vm.Neo.Blockchain import GetHeight,GetHeader
 from boa.blockchain.vm.Neo.Action import RegisterAction
 from boa.blockchain.vm.Neo.Runtime import Notify,CheckWitness
-from boa.code.builtins import concat
+from boa.code.builtins import concat, substr
 from nrv.token.nrvtoken import Token
 from nrv.common.storage import StorageAPI
 from nrv.common.txio import Attachments,get_asset_attachments
@@ -119,15 +119,33 @@ class Crowdsale():
         owner = storage.get(token.owner_key)
         if CheckWitness(owner):
 
-            for address in args:
+            for addresses in args:
 
-                if len(address) == 20:
+                # bl: allowing multiple addresses to be encoded into a single parameter. this works around
+                # the limitation of list arguments only supporting at most 16 elements
+                # can be passed in as follows:
+                # testinvoke {script_hash} crowdsale_register [bytearray(b'\x015\x829\x8cm6f\xb3\xac\xcc\xcas\x1dw\x06\xbc\xd2\x9co#\xba\'\x03\xc52c\xe8\xd6\xe5"\xdc2\x2039\xdc\xd8\xee\xe9')]
+                # note that neo-python doesn't like spaces in the strings, so convert any spaces to the hex equivalent: '\x20'
+                addr_length = len(addresses)
+
+                # addresses are 20 bytes, so the length must be a multiple of 20 or else it's invalid!
+                if (addr_length % 20) != 0:
+                    continue
+
+                addr_count = addr_length / 20
+
+                i = 0
+                while i < addr_count:
+                    start = i * 20
+                    end = start + 20
+                    address = substr(addresses, start, end)
 
                     kyc_storage_key = concat(self.kyc_key, address)
                     storage.put(kyc_storage_key, True)
 
                     OnKYCRegister(address)
                     ok_count += 1
+                    i += 1
 
         return ok_count
 
