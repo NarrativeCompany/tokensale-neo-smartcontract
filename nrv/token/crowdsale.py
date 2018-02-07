@@ -261,9 +261,14 @@ class Crowdsale():
         :return:
             bool: KYC Status of address
         """
-        kyc_storage_key = concat(self.kyc_key, address)
 
-        return storage.get(kyc_storage_key)
+        if len(address) == 20:
+            kyc_storage_key = concat(self.kyc_key, address)
+
+            if storage.get(kyc_storage_key):
+                return True
+
+        return False
 
     def calculate_tokens(self, token: Token, neo_attached: int, address, verify_only: bool):
         """
