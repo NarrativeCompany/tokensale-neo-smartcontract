@@ -201,7 +201,8 @@ class Crowdsale():
             # block before the total amount is reached.  An amount of TX will get through
             # the verification phase because the total amount cannot be updated during that phase
             # because of this, there should be a process in place to manually refund tokens
-            OnRefund(attachments.sender_addr, attachments.neo_attached)
+            if attachments.neo_attached > 0:
+                OnRefund(attachments.sender_addr, attachments.neo_attached)
             return False
 
         self.mint_tokens(token, attachments.receiver_addr, attachments.sender_addr, tokens, storage)
@@ -325,7 +326,7 @@ class Crowdsale():
         new_tokens_in_circulation = tokens_in_circulation + tokens
 
         if new_tokens_in_circulation > tokens_in_circulation_limit:
-            print("amount greater than token sale limit")
+            print("purchase would exceed token sale limit")
             return 0
 
         # in the main sale, all contributions are allowed, up to the tokens in circulation limit defined above
