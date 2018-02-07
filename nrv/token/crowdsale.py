@@ -137,8 +137,7 @@ class Crowdsale():
                 i = 0
                 while i < addr_count:
                     start = i * 20
-                    end = start + 20
-                    address = substr(addresses, start, end)
+                    address = substr(addresses, start, 20)
 
                     kyc_storage_key = concat(self.kyc_key, address)
                     storage.put(kyc_storage_key, True)
