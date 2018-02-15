@@ -99,6 +99,9 @@ def Main(operation, args):
             if operation == 'crowdsale_available':
                 return token.crowdsale_available_amount()
 
+            if operation == 'transfer_presale_tokens':
+                return sale.transfer_presale_tokens(token, args)
+
             if operation == 'transfer_team_tokens':
                 return sale.transfer_team_tokens(token, args)
 
