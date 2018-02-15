@@ -61,7 +61,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='Narrative NRV NEP5 ICO Token NEO .avm blockchain development dApp',
+    keywords='Narrative NRVE NEP5 ICO Token NEO .avm blockchain development dApp',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
@@ -69,7 +69,7 @@ setup(
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
-    py_modules=["nrv"],
+    py_modules=["nrve"],
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's

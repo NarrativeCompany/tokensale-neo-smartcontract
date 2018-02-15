@@ -1,4 +1,4 @@
-from nrv.common.storage import StorageAPI
+from nrve.common.storage import StorageAPI
 
 
 class Token:
@@ -8,7 +8,7 @@ class Token:
 
     name = 'Narrative Token'
 
-    symbol = 'NRV'
+    symbol = 'NRVE'
 
     decimals = 8
 

@@ -2,10 +2,10 @@ from boa.blockchain.vm.Neo.Blockchain import GetHeight,GetHeader
 from boa.blockchain.vm.Neo.Action import RegisterAction
 from boa.blockchain.vm.Neo.Runtime import Notify,CheckWitness
 from boa.code.builtins import concat, substr
-from nrv.token.nrvtoken import Token
-from nrv.common.storage import StorageAPI
-from nrv.common.txio import Attachments,get_asset_attachments
-from nrv.common.time import get_now
+from nrve.token.nrvetoken import Token
+from nrve.common.storage import StorageAPI
+from nrve.common.txio import Attachments,get_asset_attachments
+from nrve.common.time import get_now
 
 OnTransfer = RegisterAction('transfer', 'from', 'to', 'amount')
 OnContribution = RegisterAction('contribution', 'from', 'neo', 'tokens')
@@ -25,7 +25,7 @@ class Crowdsale():
     presale_individual_limit = 3000
     presale_tokens_per_neo = 400 * 100000000
     presale_minimum = 800
-    presale_token_limit = 20220000 * 100000000  # 50,550 NEO * 400 NRV/NEO = 20.22m * 10^8 (decimals)
+    presale_token_limit = 20220000 * 100000000  # 50,550 NEO * 400 NRVE/NEO = 20.22m * 10^8 (decimals)
 
     # the number of blocks per day, assuming 23 seconds/block
     blocks_per_day = 3757  # 24 * 60 * 60 / 23
@@ -201,7 +201,7 @@ class Crowdsale():
 
     def exchange(self, token: Token):
         """
-        Make a token sale contribution to exchange NEO for NRV
+        Make a token sale contribution to exchange NEO for NRVE
         :param token: Token The token object with NEP5/sale settings
         :return:
             bool: Whether the exchange was successful

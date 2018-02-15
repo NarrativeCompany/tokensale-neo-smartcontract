@@ -2,8 +2,8 @@ from boa.blockchain.vm.Neo.Runtime import CheckWitness, Notify
 from boa.blockchain.vm.Neo.Action import RegisterAction
 from boa.code.builtins import concat
 
-from nrv.token.nrvtoken import Token
-from nrv.common.storage import StorageAPI
+from nrve.token.nrvetoken import Token
+from nrve.common.storage import StorageAPI
 
 
 OnTransfer = RegisterAction('transfer', 'addr_from', 'addr_to', 'amount')
