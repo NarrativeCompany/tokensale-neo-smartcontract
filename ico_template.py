@@ -18,11 +18,11 @@ Date: Jan 27 2018
 
 from boa.blockchain.vm.Neo.Runtime import GetTrigger, CheckWitness, Notify
 from boa.blockchain.vm.Neo.TriggerType import Application, Verification
-from nrv.common.storage import StorageAPI
-from nrv.common.txio import Attachments,get_asset_attachments
-from nrv.token.nrvtoken import Token
-from nrv.token.nep5 import NEP5Handler
-from nrv.token.crowdsale import Crowdsale
+from nrve.common.storage import StorageAPI
+from nrve.common.txio import Attachments,get_asset_attachments
+from nrve.token.nrvetoken import Token
+from nrve.token.nep5 import NEP5Handler
+from nrve.token.crowdsale import Crowdsale
 
 
 def Main(operation, args):
@@ -98,6 +98,9 @@ def Main(operation, args):
 
             if operation == 'crowdsale_available':
                 return token.crowdsale_available_amount()
+
+            if operation == 'transfer_presale_tokens':
+                return sale.transfer_presale_tokens(token, args)
 
             if operation == 'transfer_team_tokens':
                 return sale.transfer_team_tokens(token, args)
