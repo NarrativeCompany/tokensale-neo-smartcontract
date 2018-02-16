@@ -450,14 +450,14 @@ class Crowdsale():
         # don't allow more than the presale token limit to be distributed
         if new_tokens_in_circulation > self.presale_token_limit:
             print("transfer would exceed presale token limit")
-            return 0
+            return False
 
         # protect against scenarios where we could deadlock the contract by making
         # a mistake in our manual distribution. allow amount smaller than 800 NEO
         # if we're down to fewer than 800 NEO remaining to close the pre-sale
         if neo < self.presale_minimum and self.presale_minimum < max_neo_remaining:
             print("insufficient presale contribution")
-            return 0
+            return False
 
         # check if they have already exchanged in the limited round
         phase_key = concat(self.presale_phase_key, address)
@@ -469,7 +469,7 @@ class Crowdsale():
 
         if total_amount_contributed > self.presale_individual_limit:
             print("transfer would exceed presale individual limit")
-            return 0
+            return False
 
         storage.put(phase_key, total_amount_contributed)
 
