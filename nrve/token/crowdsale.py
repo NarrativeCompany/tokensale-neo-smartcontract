@@ -10,6 +10,7 @@ from nrve.common.time import get_now
 OnTransfer = RegisterAction('transfer', 'from', 'to', 'amount')
 OnContribution = RegisterAction('contribution', 'from', 'neo', 'tokens')
 OnRefund = RegisterAction('refund', 'to', 'amount')
+OnPreSaleMint = RegisterAction('presale_mint', 'to', 'neo', 'tokens')
 
 OnKYCRegister = RegisterAction('kyc_registration','address')
 OnKYCDeregister = RegisterAction('kyc_deregistration','address')
@@ -434,7 +435,7 @@ class Crowdsale():
         from_address = attachments.receiver_addr
         to_address = address
 
-        # bl: the following is an exact copy of the mint_tokens function. invoking self.mint_tokens will break the
+        # bl: the following is an exact copy of the mint_tokens function (except for the OnPreSaleMint). invoking self.mint_tokens will break the
         # execution of this method due to a neo-boa compiler issue. this results in a lot of code duplication,
         # but it's preferable to the alternative of a broken smart contract. refer: https://github.com/CityOfZion/neo-boa/issues/40
 
@@ -450,6 +451,9 @@ class Crowdsale():
 
         # update the total pre-sale tokens that have been minted
         storage.put(token.presale_minted_key, new_presale_minted)
+
+        # track pre-sale mint as a separate event for easier tracking
+        OnPreSaleMint(to_address, neo, tokens)
 
         # dispatch transfer event
         OnTransfer(from_address, to_address, tokens)
