@@ -23,8 +23,8 @@ class Crowdsale():
     presale_end_block_key = b'pre_end'
     presale_phase_key = b'r1'
     presale_individual_limit = 3000
-    presale_tokens_per_neo = 4000 * 100000000
-    presale_minimum = 80
+    presale_tokens_per_neo = 400 * 100000000
+    presale_minimum = 800
     presale_token_limit = 20220000 * 100000000  # 50,550 NEO * 400 NRVE/NEO = 20.22m * 10^8 (decimals)
 
     # the number of blocks per day, assuming 23 seconds/block
