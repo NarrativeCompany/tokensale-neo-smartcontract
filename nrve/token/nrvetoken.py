@@ -22,8 +22,12 @@ class Token:
 
     in_circulation_key = b'in_circulation'
 
-    #supply_limit = 197500000 * 100000000  # 197.5m total supply * 10^8 (decimals)
-    sale_token_limit = 50000000 * 100000000  # 50m tokens for sale * 10^8 (decimals)
+    presale_minted_key = b'pre_sale_mint'
+    public_sale_sold_key = b'pub_sale_sold'
+
+    # supply_limit = 197500000 * 100000000  # 197.5m total supply * 10^8 (decimals)
+    # bl: we sold 20,220,000 tokens in the pre-sale. thus, the public sale token limit is now 29,780,000
+    public_sale_token_limit = 29780000 * 100000000  # (50m tokens for sale - 20.22m sold in pre-sale) = 29.78m * 10^8 (decimals)
 
     def crowdsale_available_amount(self):
         """
@@ -32,9 +36,10 @@ class Token:
         """
         storage = StorageAPI()
 
-        in_circ = storage.get(self.in_circulation_key)
+        public_sale_sold = storage.get(self.public_sale_sold_key)
 
-        available = self.sale_token_limit - in_circ
+        # bl: the total amount of tokens available is now based off of how many tokens have been sold during the public sale
+        available = self.public_sale_token_limit - public_sale_sold
 
         if available < 0:
             return 0

@@ -194,6 +194,13 @@ class Crowdsale():
 
         self.mint_tokens(token, attachments.receiver_addr, attachments.sender_addr, tokens, storage)
 
+        # update the total sold during the public sale
+        public_sale_sold = storage.get(token.public_sale_sold_key)
+
+        public_sale_sold += tokens
+
+        storage.put(token.public_sale_sold_key, public_sale_sold)
+
         # track contributions as a separate event for token sale account page transaction updates
         OnContribution(attachments.sender_addr, attachments.neo_attached, tokens)
 
@@ -273,9 +280,6 @@ class Crowdsale():
 
         storage = StorageAPI()
 
-        # in all phases except the presale, the limit for tokens in circulation is the sale token limit of 50m
-        tokens_in_circulation_limit = token.sale_token_limit
-
         pub_sale_start_block = storage.get(self.pub_sale_start_block_key)
 
         if not pub_sale_start_block:
@@ -303,11 +307,11 @@ class Crowdsale():
         # the value still needs to be divided to get down to the whole NEO unit
         tokens = neo_attached / 100000000 * tokens_per_neo
 
-        tokens_in_circulation = storage.get(token.in_circulation_key)
+        public_sale_sold = storage.get(token.public_sale_sold_key)
 
-        new_tokens_in_circulation = tokens_in_circulation + tokens
+        new_public_sale_sold = public_sale_sold + tokens
 
-        if new_tokens_in_circulation > tokens_in_circulation_limit:
+        if new_public_sale_sold > token.public_sale_token_limit:
             print("purchase would exceed token sale limit")
             return 0
 
@@ -389,17 +393,17 @@ class Crowdsale():
         if neo <= 0:
             return False
 
-        tokens_in_circulation = storage.get(token.in_circulation_key)
+        presale_minted = storage.get(token.presale_minted_key)
 
-        max_neo_remaining = (self.presale_token_limit - tokens_in_circulation) / self.presale_tokens_per_neo
+        max_neo_remaining = (self.presale_token_limit - presale_minted) / self.presale_tokens_per_neo
 
         # calculate the number of tokens based on the neo value supplied
         tokens = neo * self.presale_tokens_per_neo
 
-        new_tokens_in_circulation = tokens_in_circulation + tokens
+        new_presale_minted = presale_minted + tokens
 
         # don't allow more than the presale token limit to be distributed
-        if new_tokens_in_circulation > self.presale_token_limit:
+        if new_presale_minted > self.presale_token_limit:
             print("transfer would exceed presale token limit")
             return False
 
@@ -443,6 +447,9 @@ class Crowdsale():
 
         # update the in circulation amount
         token.add_to_circulation(tokens, storage)
+
+        # update the total pre-sale tokens that have been minted
+        storage.put(token.presale_minted_key, new_presale_minted)
 
         # dispatch transfer event
         OnTransfer(from_address, to_address, tokens)
