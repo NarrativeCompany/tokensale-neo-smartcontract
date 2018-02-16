@@ -20,7 +20,6 @@ class Crowdsale():
     kyc_key = b'kyc_ok'
 
     # February 9, 2018 @ 9:00:00 pm UTC
-    presale_end_block_key = b'pre_end'
     presale_phase_key = b'r1'
     presale_individual_limit = 3000
     presale_tokens_per_neo = 400 * 100000000
@@ -67,42 +66,11 @@ class Crowdsale():
     rewards_fund_tokens_max = 97500000 * 100000000  # 97.5m tokens can be minted for the rewards fund * 10^8 (decimals)
     rewards_fund_token_distribution_key = b'rewards_fund'
 
-    def end_pre_sale(self, token: Token):
-        storage = StorageAPI()
-
-        owner = storage.get(token.owner_key)
-        if not CheckWitness(owner):
-            return False
-
-        presale_end_block = storage.get(self.presale_end_block_key)
-
-        if presale_end_block:
-            print("can't end the pre-sale twice")
-            return False
-
-        tokens_in_circulation = storage.get(token.in_circulation_key)
-
-        # enforce that all of the pre-sale contributions have been distributed before the pre-sale can be ended
-        if tokens_in_circulation != self.presale_token_limit:
-            print("can't end the pre-sale before distributing all pre-sale tokens")
-            return False
-
-        height = GetHeight()
-
-        storage.put(self.presale_end_block_key, height)
-
-        return True
-
     def start_public_sale(self, token: Token):
         storage = StorageAPI()
 
         owner = storage.get(token.owner_key)
         if not CheckWitness(owner):
-            return False
-
-        presale_end_block = storage.get(self.presale_end_block_key)
-        if not presale_end_block:
-            print("can't start the public sale until pre-sale has ended")
             return False
 
         pub_sale_start_block = storage.get(self.pub_sale_start_block_key)
@@ -314,15 +282,10 @@ class Crowdsale():
         # in all phases except the presale, the limit for tokens in circulation is the sale token limit of 50m
         tokens_in_circulation_limit = token.sale_token_limit
 
-        presale_end_block = storage.get(self.presale_end_block_key)
         pub_sale_start_block = storage.get(self.pub_sale_start_block_key)
 
-        if not presale_end_block:
-            # not accepting user contributions during the pre-sale phase now
-            print("presale contributions not allowed")
-            return 0
-        elif not pub_sale_start_block:
-            print("presale over, main sale not started")
+        if not pub_sale_start_block:
+            print("main sale not started")
             return 0
         elif height > (pub_sale_start_block + self.sale_blocks):
             print("crowdsale ended")
@@ -430,12 +393,6 @@ class Crowdsale():
         if len(address) != 20:
             return False
         if neo <= 0:
-            return False
-
-        # stop presale token distribution once the pre-sale is over
-        presale_end_block = storage.get(self.presale_end_block_key)
-        if presale_end_block:
-            print("can't distribute pre-sale tokens once the pre-sale has ended")
             return False
 
         tokens_in_circulation = storage.get(token.in_circulation_key)
