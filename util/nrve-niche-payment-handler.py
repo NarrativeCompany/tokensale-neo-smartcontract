@@ -97,7 +97,7 @@ class NichePaymentHandler(BlockchainMain):
         # from, to, amount
         from_address = self.get_address(event.event_payload[1])
         to_address = self.get_address(event.event_payload[2])
-        nrve_amount = event.event_payload[3]
+        nrve_amount = int.from_bytes(event.event_payload[3],"little")
 
         # bl: event.tx_hash is a UInt256, so convert it to a hex string
         tx_hash = event.tx_hash.ToString()
