@@ -4,7 +4,7 @@
   "expected_result_count" : 1,
 
   "jobs" : [
-      "['AJSeVjkK2LkkYo63p2Hk4aSme5MiMv16MA',800]",
-      "['AdnbiMvqNFSsTnzjTf4jdXwYAjtDawpHQY',2200]"
+    "['AJSeVjkK2LkkYo63p2Hk4aSme5MiMv16MA',800]",
+    "['AdnbiMvqNFSsTnzjTf4jdXwYAjtDawpHQY',2200]"
   ]
 }

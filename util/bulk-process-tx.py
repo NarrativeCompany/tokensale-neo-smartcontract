@@ -12,6 +12,7 @@ http://neo-python.readthedocs.io/en/latest/smartcontracts.html
 Usage:
 
 * Update config/bulk-tx-config.json params
+* Update the job config file (as defined in bulk-tx-config.json) to contain the jobs to process
 * Update config/network-wallets.json wallet path for the selected network
 * Place this file in neo-python/neo/contrib and execute the following from neo-python dir:
 
@@ -27,9 +28,12 @@ import os
 import json
 from time import sleep
 
+from neo.Core.Blockchain import Blockchain
+
 from neo.contrib.smartcontract import SmartContract
 
 from neo.Prompt.Utils import parse_param
+from neo.Prompt.Commands.Send import construct_and_send
 
 from pyparsing import ZeroOrMore, Regex
 
@@ -62,7 +66,7 @@ class BulkProcess(BlockchainMain):
     def __init__(self):
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'bulk-tx-config.json'), 'r') as f:
             config = json.load(f)
-        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'crowdsale-register-config.json'), 'r') as f:
+        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', config['job_config_file']), 'r') as f:
             job_config = json.load(f)
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'network-wallets.json'), 'r') as f:
             network_wallets_config = json.load(f)
@@ -139,11 +143,12 @@ class BulkProcess(BlockchainMain):
 
         self.logger.debug("%s jobs processed. %s jobs remaining.", self.jobs_processed, jobs_remaining)
 
+        self.tx_processing = None
+
         if jobs_remaining > 0:
             # just pop a job off the array to process next
             self.job = self.jobs[0]
             self.jobs = self.jobs[1:]
-            self.tx_processing = None
         else:
             # change the jobs array to None (from an empty array) to indicate we are done and can shut down
             self.jobs = None
@@ -162,6 +167,16 @@ class BulkProcess(BlockchainMain):
                 # no more jobs? then shut 'er down!
                 if self.jobs is None:
                     self.shutdown()
+
+                # if it's a refund job, then check to see if we have the transaction recorded yet. if not, keep waiting.
+                # note that this will give an info log "Could not find transaction for hash b'xxx'" every second until the tx is processed.
+                if self.is_refund_job() and self.tx_processing:
+                    tx, height = Blockchain.Default().GetTransaction(self.tx_processing)
+                    # the tx will have a height once it's completed!
+                    if height > -1:
+                        # the tx has been processed, so process the next refund!
+                        self.jobs_processed += 1
+                        self.process_job()
                 continue
 
             if self.wallet_needs_recovery:
@@ -170,39 +185,65 @@ class BulkProcess(BlockchainMain):
             else:
                 self.wallet_sync()
 
-            job_args = self.parser.parseString(self.operation + " " + str(self.job))
-            job_args = job_args[0:]
-
-            if len(job_args) != 2:
-                self.logger.error('ERROR! must have only 2 args (operation, params). skipping! %s', job_args)
-                self.job = None
-                self.process_job()
-                continue
-
-            operation_params = parse_param(job_args[1])
-            if len(operation_params) != self.operation_args_array_length:
-                self.logger.error('ERROR! must have exactly %d operation args, not %d. skipping! %s', self.operation_args_array_length, len(operation_params), job_args)
-                self.job = None
-                self.process_job()
-                continue
-
-            args = [self.smart_contract_hash] + job_args
-            self.logger.debug('processing job: %s', args)
-            result = self.test_invoke(args, self.expected_result_count, self.test_only)
-
-            if not result:
-                # transaction failed? wallet probably out-of-sync (insufficient funds) so reload it
-                self.wallet_needs_recovery = True
+            # special handling for sending refunds
+            if self.is_refund_job():
+                self.process_refund_job()
             else:
-                # this job has been invoked, so clear it out. on to the next.
-                self.job = None
-                if self.test_only:
-                    # when testing but not relaying transactions, we just continue to the next job
-                    self.jobs_processed += 1
-                    self.process_job()
-                else:
-                    # transaction successfully relayed? then let's set the tx Hash that we're waiting for
-                    self.tx_processing = result.Hash
+                self.process_testinvoke_job()
+
+    def is_refund_job(self):
+        return self.operation == 'send'
+
+    def process_refund_job(self):
+        if len(self.job) != self.operation_args_array_length:
+            self.logger.error('ERROR! must have exactly %d operation args, not %d. skipping! %s', self.operation_args_array_length, len(self.job), self.job)
+            self.job = None
+            self.process_job()
+            return
+
+        self.logger.debug('processing refund: %s', self.job)
+        result = construct_and_send(self, self.wallet, self.job, False)
+
+        if not result:
+            self.wallet_needs_recovery = True
+        else:
+            self.job = None
+            self.tx_processing = result.Hash
+
+    def process_testinvoke_job(self):
+        job_args = self.parser.parseString(self.operation + " " + str(self.job))
+        job_args = job_args[0:]
+
+        if len(job_args) != 2:
+            self.logger.error('ERROR! must have only 2 args (operation, params). skipping! %s', job_args)
+            self.job = None
+            self.process_job()
+            return
+
+        operation_params = parse_param(job_args[1])
+        if len(operation_params) != self.operation_args_array_length:
+            self.logger.error('ERROR! must have exactly %d operation args, not %d. skipping! %s', self.operation_args_array_length, len(operation_params), job_args)
+            self.job = None
+            self.process_job()
+            return
+
+        args = [self.smart_contract_hash] + job_args
+        self.logger.debug('processing job: %s', args)
+        result = self.test_invoke(args, self.expected_result_count, self.test_only)
+
+        if not result:
+            # transaction failed? wallet probably out-of-sync (insufficient funds) so reload it
+            self.wallet_needs_recovery = True
+        else:
+            # this job has been invoked, so clear it out. on to the next.
+            self.job = None
+            if self.test_only:
+                # when testing but not relaying transactions, we just continue to the next job
+                self.jobs_processed += 1
+                self.process_job()
+            else:
+                # transaction successfully relayed? then let's set the tx Hash that we're waiting for
+                self.tx_processing = result.Hash
 
 
 def main():
