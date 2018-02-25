@@ -1,0 +1,9 @@
+{
+  "operation" : "send",
+  "operation_args_array_length" : 4,
+  "expected_result_count" : null,
+
+  "jobs" : [
+    ["neo", "AeZLz6qdbycNvifALrjzizBq2UTwazMVkQ", "1", "--from-addr=Ac6jBVgsREzhsBvRtcZKeqLo2g8b5FftYE"]
+  ]
+}
