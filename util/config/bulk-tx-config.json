@@ -1,0 +1,5 @@
+{
+  "network" : "MAINNET",
+  "smart_contract" : "a721d5893480260bd28ca1f395f2c465d0b5b1c2",
+  "test_only" : true
+}

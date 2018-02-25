@@ -1,0 +1,10 @@
+{
+  "operation" : "transfer_presale_tokens",
+  "operation_args_array_length" : 2,
+  "expected_result_count" : 1,
+
+  "jobs" : [
+      "['AJSeVjkK2LkkYo63p2Hk4aSme5MiMv16MA',800]",
+      "['AdnbiMvqNFSsTnzjTf4jdXwYAjtDawpHQY',2200]"
+  ]
+}

@@ -26,6 +26,7 @@ Based originally off of NEX's NEO ICO Template: https://github.com/neonexchange/
 * KYC whitelist registration and deregistration of addresses in bulk.
 * Pausing and resuming the sale.
 * Transferring ownership via "two-phase commit" to ensure new owner has proper access.
+* Compile with neo-boa 0.2.1 to avoid 0.2.2 issues
 
 ### Smart Contract Event Handler
 
@@ -74,6 +75,5 @@ then the tx invoke will not be relayed.
 net_fee = Fixed8.FromDecimal(.0004)
 ```
 * It could be improved to take the current script params as arguments instead of being baked into the code.
-* Could be redesigned with an OO approach as opposed to using global variables throughout.
 
 Run the script from a neo-python installation from the neo/contrib directory.

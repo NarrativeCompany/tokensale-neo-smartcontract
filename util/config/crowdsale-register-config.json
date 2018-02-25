@@ -1,0 +1,10 @@
+{
+  "operation": "crowdsale_register",
+  "operation_args_array_length": 6,
+  "expected_result_count": 6,
+
+  "jobs": [
+    "['AJSeVjkK2LkkYo63p2Hk4aSme5MiMv16MA','AYEiFR4EzrEVsH4hjjXbqiXbJ6ZLJ6rT6A','AHEJFFbV7KEDZa3bpUYHUSCZC8vAPqhxf2','AVMV9mCEGKrS3FR75D9Ma3LAnYQzoHNXsL','AZZgGk4SsP5cpJAr6xmpki6dK85AxHJNTr','AevMBsxqCTieBrvYZtXsSV3p6CKqJ8CdfF']",
+    "['AdnbiMvqNFSsTnzjTf4jdXwYAjtDawpHQY','AYvV3J6UQ4ac5eCQbbyjHEokKBx8BmeF2V','AMLvT9R3yStnJwwFbwzpfAetkvNawxLpcM','AVfWr2V4GY4MKmrsh5GeYat2wpHCR7p2A1','Ac6XjJrMwQiTePKGa7bn1FZayRTknSnnvG','Ab7cHdRGYCQwjTaQmXyZwZ38Sr6wiAkmjZ']"
+  ]
+}
