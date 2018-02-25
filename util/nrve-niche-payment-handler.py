@@ -105,7 +105,7 @@ class NichePaymentHandler(BlockchainMain):
         # if this is an outbound NRVE transfer from our payment wallet, then it's a refund!
         if from_address == self.niche_payment_address:
             # in order to move on to the next refund, we just need to clear the tx, assuming it's the right one!
-            if tx_hash == self.refund_tx_processing:
+            if tx_hash == self.refund_tx_processing.ToString():
                 self.logger.info("- refund %s: to %s: %s NRVE (tx: %s)", event_type, to_address, nrve_amount, tx_hash)
                 self.refund_tx_processing = None
             else:
@@ -130,7 +130,7 @@ class NichePaymentHandler(BlockchainMain):
 
         try:
             with connection.cursor() as cursor:
-                self.logger.info("- %s: from %s: %s NRVE (tx: %s)", event_type, from_address, nrve_amount, tx_hash)
+                self.logger.info("- payment %s: from %s: %s NRVE (tx: %s)", event_type, from_address, nrve_amount, tx_hash)
                 sql = ("select oid from `NicheAuctionInvoicePayment`\n"
                        "where fromNeoAddress = %s\n"
                        "and nrveAmount = %s\n"
