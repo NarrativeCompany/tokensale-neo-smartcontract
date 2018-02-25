@@ -11,9 +11,10 @@ http://neo-python.readthedocs.io/en/latest/smartcontracts.html
 
 Usage:
 
-* Update neo-nrve-config.json params
-* Update db-config.json database details
-* Update smtp-config.json SMTP details (host, port, TLS, etc.)
+* Update config/neo-nrve-config.json params
+* Update config/network-wallets.json wallet path for the selected network
+* Update config/db-config.json database details
+* Update config/smtp-config.json SMTP details (host, port, TLS, etc.)
 * Place this file in neo-python/neo/contrib and execute the following from neo-python dir:
 
 python3.5 -m venv venv

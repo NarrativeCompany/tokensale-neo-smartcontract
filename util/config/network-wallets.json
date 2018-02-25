@@ -3,9 +3,9 @@
     "wallet_path": "neo-privnet.wallet"
   },
   "TESTNET": {
-    "wallet_path": "neo-gui.wallet"
+    "wallet_path": "neo-testnet.wallet"
   },
   "MAINNET": {
-    "wallet_path": "/Volumes/N/n.devbranch.scowneraddronly.w"
+    "wallet_path": "neo-mainnet.wallet"
   }
 }

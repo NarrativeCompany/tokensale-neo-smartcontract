@@ -11,6 +11,8 @@ http://neo-python.readthedocs.io/en/latest/smartcontracts.html
 
 Usage:
 
+* Update config/bulk-tx-config.json params
+* Update config/network-wallets.json wallet path for the selected network
 * Place this file in neo-python/neo/contrib and execute the following from neo-python dir:
 
 python3.5 -m venv venv

@@ -10,8 +10,9 @@ http://neo-python.readthedocs.io/en/latest/smartcontracts.html
 
 Usage:
 
-* Update nrve-niche-config.json params
-* Update db-config.json database details
+* Update config/nrve-niche-config.json params
+* Update config/network-wallets.json wallet path for the selected network
+* Update config/db-config.json database details
 * Place this file in neo-python/neo/contrib and execute the following from neo-python dir:
 
 python3.5 -m venv venv
@@ -19,7 +20,7 @@ source venv/bin/activate
 # bl: these only need to be done once
 #pip install -U setuptools pip wheel
 #pip install -e .
-python neo/contrib/neo-nrve-eventhandler.py
+python neo/contrib/neo-niche-payment-handler.py
 
 """
 import os
