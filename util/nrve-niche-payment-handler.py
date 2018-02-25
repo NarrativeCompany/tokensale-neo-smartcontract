@@ -135,6 +135,7 @@ class NichePaymentHandler(BlockchainMain):
                        "where fromNeoAddress = %s\n"
                        "and nrveAmount = %s\n"
                        "and paymentStatus = 0\n"
+                       "and transactionId is null\n"
                        "for update;")
                 args = (from_address, nrve_amount)
                 cursor.execute(sql, args)
@@ -155,7 +156,8 @@ class NichePaymentHandler(BlockchainMain):
                        ", transactionDate = from_unixtime(%s)\n"
                        "where fromNeoAddress = %s\n"
                        "and nrveAmount = %s\n"
-                       "and paymentStatus = 0;")
+                       "and paymentStatus = 0\n"
+                       "and transactionId is null;")
                 args = (tx_hash, timestamp, from_address, nrve_amount)
 
                 # Create a new record
@@ -175,10 +177,13 @@ class NichePaymentHandler(BlockchainMain):
 
     def refund_payment(self, from_address, nrve_amount):
         token = get_asset_id(self.wallet, self.nrve_token_symbol)
+        print('found token %s', token)
         # the nrve_amount that comes from the NEP-5 "transfer" event is in the smallest NRVE units (0.00000001).
         # this method easily converts that amount into the equivalent value that would be entered at the neo-python command line
         nrve_amount_str = string_from_amount(token, nrve_amount)
+        print('nrve_amount_str %s', nrve_amount_str)
         self.refunds_to_process.append([self.nrve_token_symbol,self.niche_payment_address,from_address,nrve_amount_str])
+        print('refunds_to_process %s', self.refunds_to_process)
 
     def custom_background_code(self):
         count = 0
