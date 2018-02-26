@@ -165,7 +165,7 @@ class TokenSaleEventHandler(BlockchainMain):
             connection.close()
 
         # if this is the whitelist tx we are waiting for, then clear it out so the next can be processed!
-        if tx_hash == self.whitelist_tx_processing:
+        if tx_hash == self.whitelist_tx_processing.ToString():
             self.whitelist_tx_processing = None
 
     def get_connection(self):
