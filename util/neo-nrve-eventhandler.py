@@ -27,6 +27,7 @@ python neo/contrib/neo-nrve-eventhandler.py
 """
 import os
 import json
+import argparse
 from time import sleep
 
 from neo.Core.Blockchain import Blockchain
@@ -52,16 +53,19 @@ class TokenSaleEventHandler(BlockchainMain):
     db_config = None
     smtp_config = None
 
+    disable_auto_whitelist = None
+
     wallet_needs_recovery = False
 
     whitelists_to_process = []
     whitelist_tx_processing = None
 
-    def __init__(self):
+    def __init__(self, disable_auto_whitelist):
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'neo-nrve-config.json'), 'r') as f:
             config = json.load(f)
-        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'network-wallets.json'), 'r') as f:
-            network_wallets_config = json.load(f)
+        if not disable_auto_whitelist:
+            with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'network-wallets.json'), 'r') as f:
+                network_wallets_config = json.load(f)
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'db-config.json'), 'r') as f:
             self.db_config = json.load(f)
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'smtp-config.json'), 'r') as f:
@@ -77,7 +81,10 @@ class TokenSaleEventHandler(BlockchainMain):
         self.sc_notify = self.old_smart_contract.on_notify(self.sc_notify)
         self.sc_notify = self.smart_contract.on_notify(self.sc_notify)
 
-        self.setup_wallet(network_wallets_config[config['network']]['wallet_path'])
+        if not disable_auto_whitelist:
+            self.setup_wallet(network_wallets_config[config['network']]['wallet_path'])
+
+        self.disable_auto_whitelist = disable_auto_whitelist
 
     def sc_notify(self, event):
 
@@ -165,7 +172,7 @@ class TokenSaleEventHandler(BlockchainMain):
             connection.close()
 
         # if this is the whitelist tx we are waiting for, then clear it out so the next can be processed!
-        if tx_hash == self.whitelist_tx_processing.ToString():
+        if not self.disable_auto_whitelist and tx_hash == self.whitelist_tx_processing.ToString():
             self.whitelist_tx_processing = None
 
     def get_connection(self):
@@ -200,6 +207,10 @@ class TokenSaleEventHandler(BlockchainMain):
             if (count % 60) == 0:
                 self.logger.info("Block %s / %s", str(Blockchain.Default().Height), str(Blockchain.Default().HeaderHeight))
                 count = 0
+
+            # when disabling auto-whitelisting, nothing further to do here
+            if self.disable_auto_whitelist:
+                continue
 
             # already have a whitelist that we are waiting to process? then just keep waiting until that transaction comes through
             if self.whitelist_tx_processing:
@@ -258,7 +269,13 @@ class TokenSaleEventHandler(BlockchainMain):
             connection.close()
 
 def main():
-    event_handler = TokenSaleEventHandler()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--disable-auto-whitelist", action="store_true", default=False, help="Option to disable auto-whitelisting")
+
+    args = parser.parse_args()
+
+    event_handler = TokenSaleEventHandler(args.disable_auto_whitelist)
     event_handler.run()
 
 
