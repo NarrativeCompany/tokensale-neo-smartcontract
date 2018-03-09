@@ -1,5 +1,6 @@
 {
   "network" : "PRIVNET",
   "smart_contract" : "bfbf01287201b310bd3c2133374e43a60e14db82",
-  "old_smart_contract" : "5fd4d17a37e8681f58b169aba90d0b9f06cb6d5e"
+  "old_smart_contract" : "5fd4d17a37e8681f58b169aba90d0b9f06cb6d5e",
+  "ignore_blocks_older_than" : 2000188
 }

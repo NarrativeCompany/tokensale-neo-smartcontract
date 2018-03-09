@@ -53,6 +53,8 @@ class TokenSaleEventHandler(BlockchainMain):
     db_config = None
     smtp_config = None
 
+    ignore_blocks_older_than = None
+
     disable_auto_whitelist = None
 
     wallet_needs_recovery = False
@@ -76,6 +78,7 @@ class TokenSaleEventHandler(BlockchainMain):
         self.smart_contract_hash = config['smart_contract']
         self.smart_contract = SmartContract(self.smart_contract_hash)
         self.old_smart_contract = SmartContract(config['old_smart_contract'])
+        self.ignore_blocks_older_than = config['ignore_blocks_older_than']
 
         # decorate the event handler method dynamically now that we have loaded the SCs
         self.sc_notify = self.old_smart_contract.on_notify(self.sc_notify)
@@ -106,6 +109,9 @@ class TokenSaleEventHandler(BlockchainMain):
         # it's just a string, so we decode it with utf-8:
         event_type = event.event_payload[0].decode("utf-8")
         block_number = event.block_number
+
+        if self.ignore_blocks_older_than and block_number < self.ignore_blocks_older_than:
+            return
 
         timestamp = self.blockchain.GetHeaderByHeight(block_number).Timestamp
 
