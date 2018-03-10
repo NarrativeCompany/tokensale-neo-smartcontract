@@ -161,8 +161,8 @@ class BlockchainMain:
                 print(
                     "-------------------------------------------------------------------------------------------------------------------------------------\n")
 
-                if str(results[0]) != ("Integer: %d " % expected_result_count):
-                    self.logger.error("Found invalid result! ''%s''", results[0])
+                if results[0].GetBigInteger() != expected_result_count:
+                    self.logger.error("Found invalid result! '%s' but expected '%s'" % (results[0], expected_result_count))
 
                 if test_only:
                     return True
