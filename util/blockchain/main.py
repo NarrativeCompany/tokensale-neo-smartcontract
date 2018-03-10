@@ -106,6 +106,9 @@ class BlockchainMain:
         wallet_passwd = prompt("[password]> ", is_password=True)
         self.wallet_passwd_key = to_aes_key(wallet_passwd)
 
+        self.setup_network()
+
+    def setup_network(self):
         if self.network_type == NetworkType.TESTNET:
             settings.setup_testnet()
         elif self.network_type == NetworkType.MAINNET:

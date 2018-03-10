@@ -86,6 +86,8 @@ class TokenSaleEventHandler(BlockchainMain):
 
         if not disable_auto_whitelist:
             self.setup_wallet(network_wallets_config[config['network']]['wallet_path'])
+        else:
+            self.setup_network()
 
         self.disable_auto_whitelist = disable_auto_whitelist
 
