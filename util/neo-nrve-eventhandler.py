@@ -139,8 +139,8 @@ class TokenSaleEventHandler(BlockchainMain):
                     # from, neo, tokens
                     address = self.get_address(event.event_payload[1])
                     # based on the smart contract, we know these should always be whole numbers
-                    neo = (int)(int.from_bytes(event.event_payload[2],"little") / 100000000)
-                    tokens = (int)(int.from_bytes(event.event_payload[3],"little") / 100000000)
+                    neo = (int)(event.event_payload[2] / 100000000)
+                    tokens = (int)(event.event_payload[3] / 100000000)
                     self.logger.info("- %s: %s: %s NEO (%s NRVE) (tx: %s)", event_type, address, neo, tokens, tx_hash)
                     sql = ("insert into `NarrativeContribution` (transactionId, neo, nrveTokens, transactionDate, neoAddress_oid)\n"
                            "select %s, %s, %s, from_unixtime(%s), na.oid\n"
@@ -151,7 +151,7 @@ class TokenSaleEventHandler(BlockchainMain):
                     # to, amount
                     address = self.get_address(event.event_payload[1])
                     # based on the smart contract, the amount should always be a whole number
-                    amount = (int)(int.from_bytes(event.event_payload[2],"little") / 100000000)
+                    amount = (int)(event.event_payload[2] / 100000000)
                     log = "%s: %s: %s NEO [%s] (tx: %s)" % (event_type, address, amount, contract_hash, tx_hash)
                     self.logger.info('- ' + log)
                     sql = ("insert into `NarrativeRefund` (transactionId, contractHash, neo, transactionDate, neoAddress)\n"
