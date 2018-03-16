@@ -146,9 +146,9 @@ class BlockchainMain:
             self.logger.debug('waiting for NodeLeader peers')
             sleep(1)
 
-    def test_invoke(self, args, expected_result_count, test_only=False):
+    def test_invoke(self, args, expected_result_count, test_only=False, from_addr=None):
         if args and len(args) > 0:
-            tx, fee, results, num_ops = TestInvokeContract(self.wallet, args, min_fee=Fixed8.FromDecimal(.0004))
+            tx, fee, results, num_ops = TestInvokeContract(self.wallet, args, from_addr=from_addr, min_fee=Fixed8.FromDecimal(.0004))
 
             if tx is not None and results is not None:
                 print(
@@ -170,7 +170,7 @@ class BlockchainMain:
                 # bl: tx can fail if there are no connected peers, so wait for one
                 self.wait_for_peers()
 
-                return InvokeContract(self.wallet, tx, fee)
+                return InvokeContract(self.wallet, tx, fee, from_addr)
             else:
                 print("Error testing contract invoke: %s" % args)
         else:

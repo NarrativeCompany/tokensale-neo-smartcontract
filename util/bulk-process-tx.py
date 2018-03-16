@@ -49,6 +49,7 @@ class BulkProcess(BlockchainMain):
     operation = None
     operation_args_array_length = None
     expected_result_count = None
+    from_addr = None
 
     test_only = False
 
@@ -78,6 +79,10 @@ class BulkProcess(BlockchainMain):
         self.operation = job_config['operation']
         self.operation_args_array_length = job_config['operation_args_array_length']
         self.expected_result_count = job_config['expected_result_count']
+        try:
+            self.from_addr = job_config['from_addr']
+        except KeyError:
+            pass
 
         self.jobs = job_config['jobs']
 
@@ -231,7 +236,7 @@ class BulkProcess(BlockchainMain):
 
         args = [self.smart_contract_hash] + job_args
         self.logger.debug('processing job: %s', args)
-        result = self.test_invoke(args, self.expected_result_count, self.test_only)
+        result = self.test_invoke(args, self.expected_result_count, self.test_only, self.from_addr)
 
         if not result:
             # transaction failed? wallet probably out-of-sync (insufficient funds) so reload it

@@ -2,6 +2,7 @@
   "operation": "crowdsale_register",
   "operation_args_array_length": 6,
   "expected_result_count": 6,
+  "from_addr": "Adhjyf8u7PNHNsbUNfuRHweZaKgmuoXtaS",
 
   "jobs": [
     "['AJSeVjkK2LkkYo63p2Hk4aSme5MiMv16MA','AYEiFR4EzrEVsH4hjjXbqiXbJ6ZLJ6rT6A','AHEJFFbV7KEDZa3bpUYHUSCZC8vAPqhxf2','AVMV9mCEGKrS3FR75D9Ma3LAnYQzoHNXsL','AZZgGk4SsP5cpJAr6xmpki6dK85AxHJNTr','AevMBsxqCTieBrvYZtXsSV3p6CKqJ8CdfF']",
