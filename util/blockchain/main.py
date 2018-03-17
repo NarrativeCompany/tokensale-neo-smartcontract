@@ -44,7 +44,7 @@ class BlockchainMain:
     def run(self):
 
         # Setup the blockchain
-        self.blockchain = LevelDBBlockchain(settings.LEVELDB_PATH)
+        self.blockchain = LevelDBBlockchain(settings.chain_leveldb_path)
         Blockchain.RegisterBlockchain(self.blockchain)
         NodeLeader.Instance().Start()
         dbloop = task.LoopingCall(Blockchain.Default().PersistBlocks)
