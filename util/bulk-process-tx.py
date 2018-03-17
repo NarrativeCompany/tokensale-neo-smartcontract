@@ -206,6 +206,9 @@ class BulkProcess(BlockchainMain):
             self.process_job()
             return
 
+        # bl: tx can fail if there are no connected peers, so wait for one
+        self.wait_for_peers()
+
         self.logger.debug('processing refund: %s', self.job)
         # in case we have to rebuild the wallet and try the job again, pass in a new list to construct_and_send
         # since internally the method actually has a side effect of modifying the array to strip out the from address
