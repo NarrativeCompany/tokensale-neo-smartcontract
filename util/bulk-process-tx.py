@@ -212,7 +212,7 @@ class BulkProcess(BlockchainMain):
         self.logger.debug('processing refund: %s', self.job)
         # in case we have to rebuild the wallet and try the job again, pass in a new list to construct_and_send
         # since internally the method actually has a side effect of modifying the array to strip out the from address
-        result = construct_and_send(self, self.wallet, list(self.job), False)
+        result = construct_and_send(None, self.wallet, list(self.job), False)
 
         if not result:
             self.wallet_needs_recovery = True
