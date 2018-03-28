@@ -112,9 +112,11 @@ class NichePaymentHandler(BlockchainMain):
         raw_nrve_amount = event.event_payload[3]
         # bl: it seems our TestNet contract vs. MainNet contracts are somehow returning different payload values, so detect which
         if type(raw_nrve_amount) is BigInteger:
+            print('BigInteger nrve_amount %s' % raw_nrve_amount)
             nrve_amount = raw_nrve_amount
         else:
-            nrve_amount = raw_nrve_amount.GetBigInteger()
+            print('non-BigInteger nrve_amount %s' % raw_nrve_amount)
+            nrve_amount = int.from_bytes(raw_nrve_amount, 'little')
 
         # bl: event.tx_hash is a UInt256, so convert it to a hex string
         tx_hash = event.tx_hash.ToString()
