@@ -25,6 +25,7 @@ python neo/contrib/neo-niche-payment-handler.py
 """
 import os
 import json
+import traceback
 from time import sleep
 import pymysql.cursors
 from pymysql import MySQLError
@@ -71,6 +72,14 @@ class NichePaymentHandler(BlockchainMain):
         self.sc_notify = self.smart_contract.on_notify(self.sc_notify)
 
     def sc_notify(self, event):
+        try:
+            self.do_sc_notify(event)
+        except Exception as e:
+            print("Could not process notify event: %s" % e)
+            traceback.print_stack()
+            traceback.print_exc()
+
+    def do_sc_notify(self, event):
 
         # Make sure that the event payload list has at least one element.
         if not len(event.event_payload):
