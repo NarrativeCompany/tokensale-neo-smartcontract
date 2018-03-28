@@ -30,6 +30,8 @@ from time import sleep
 import pymysql.cursors
 from pymysql import MySQLError
 
+from neocore import BigInteger
+
 from neo.Core.Blockchain import Blockchain
 
 from neo.contrib.narrative.blockchain.main import BlockchainMain, NetworkType
@@ -106,7 +108,12 @@ class NichePaymentHandler(BlockchainMain):
         # from, to, amount
         from_address = self.get_address(event.event_payload[1])
         to_address = self.get_address(event.event_payload[2])
-        nrve_amount = int.from_bytes(event.event_payload[3], 'little')
+        raw_nrve_amount = event.event_payload[3]
+        # bl: it seems our TestNet contract vs. MainNet contracts are somehow returning different payload values, so detect which
+        if type(raw_nrve_amount) is BigInteger:
+            nrve_amount = raw_nrve_amount
+        else:
+            nrve_amount = raw_nrve_amount.GetBigInteger()
 
         # bl: event.tx_hash is a UInt256, so convert it to a hex string
         tx_hash = event.tx_hash.ToString()
