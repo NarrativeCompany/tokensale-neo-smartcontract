@@ -80,6 +80,7 @@ class NichePaymentHandler(BlockchainMain):
             print("Could not process notify event: %s" % e)
             traceback.print_stack()
             traceback.print_exc()
+            raise e
 
     def do_sc_notify(self, event):
 
