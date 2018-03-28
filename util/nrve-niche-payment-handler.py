@@ -224,8 +224,8 @@ class NichePaymentHandler(BlockchainMain):
 
             refund = self.refunds_to_process[0]
             self.refunds_to_process = self.refunds_to_process[1:]
-            if len(refund) != 4:
-                self.logger.error('ERROR! refunds must have exactly 4 args. skipping! %s', refund)
+            if len(refund) != 2:
+                self.logger.error('ERROR! refunds must have exactly 2 args. skipping! %s', refund)
                 continue
 
             self.logger.debug('processing refund: %s', refund)
