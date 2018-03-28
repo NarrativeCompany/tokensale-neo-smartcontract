@@ -37,7 +37,7 @@ from neo.Core.Blockchain import Blockchain
 from neo.contrib.narrative.blockchain.main import BlockchainMain, NetworkType
 from neo.contrib.smartcontract import SmartContract
 
-from neo.Prompt.Commands.Tokens import token_send, get_asset_id, string_from_amount
+from neo.Prompt.Commands.Tokens import do_token_transfer, get_asset_id
 
 
 class NichePaymentHandler(BlockchainMain):
@@ -195,13 +195,7 @@ class NichePaymentHandler(BlockchainMain):
             connection.close()
 
     def refund_payment(self, from_address, nrve_amount):
-        token = get_asset_id(self.wallet, self.nrve_token_symbol)
-        print('found token %s', token)
-        # the nrve_amount that comes from the NEP-5 "transfer" event is in the smallest NRVE units (0.00000001).
-        # this method easily converts that amount into the equivalent value that would be entered at the neo-python command line
-        nrve_amount_str = string_from_amount(token, nrve_amount)
-        print('nrve_amount_str %s', nrve_amount_str)
-        self.refunds_to_process.append([self.nrve_token_symbol,self.niche_payment_address,from_address,nrve_amount_str])
+        self.refunds_to_process.append([from_address,nrve_amount])
         print('refunds_to_process %s', self.refunds_to_process)
 
     def custom_background_code(self):
@@ -235,7 +229,9 @@ class NichePaymentHandler(BlockchainMain):
                 continue
 
             self.logger.debug('processing refund: %s', refund)
-            result = token_send(self.wallet, refund, False)
+            token = get_asset_id(self.wallet, self.nrve_token_symbol)
+            print('found token %s', token)
+            result = do_token_transfer(token, self.wallet, self.niche_payment_address, refund[0], refund[1], False)
 
             if not result:
                 # transaction failed? wallet probably out-of-sync (insufficient funds) so reload it
