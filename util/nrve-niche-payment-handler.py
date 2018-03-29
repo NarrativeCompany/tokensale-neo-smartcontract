@@ -30,8 +30,6 @@ from time import sleep
 import pymysql.cursors
 from pymysql import MySQLError
 
-from boa.interop import BigInteger
-
 from neo.Core.Blockchain import Blockchain
 
 from neo.contrib.narrative.blockchain.main import BlockchainMain, NetworkType
@@ -110,8 +108,8 @@ class NichePaymentHandler(BlockchainMain):
         from_address = self.get_address(event.event_payload[1])
         to_address = self.get_address(event.event_payload[2])
         raw_nrve_amount = event.event_payload[3]
-        # bl: there can be different data types returned in the amount payload for some reason, so detect which it is (BigInteger or bytes)
-        if type(raw_nrve_amount) is BigInteger:
+        # bl: there can be different data types returned in the amount payload for some reason, so detect which it is (BigInteger/int or bytes)
+        if isinstance(raw_nrve_amount, int):
             print('BigInteger nrve_amount %s' % raw_nrve_amount)
             nrve_amount = raw_nrve_amount
         else:
