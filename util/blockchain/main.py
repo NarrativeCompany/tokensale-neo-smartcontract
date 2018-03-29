@@ -120,6 +120,10 @@ class BlockchainMain:
 
     def wallet_open(self):
         self.wallet = UserWallet.Open(self.wallet_path, self.wallet_passwd_key)
+        # bl: there is some side effect happening here that allows the wallet to be fully/properly initialized.
+        # without this, there are errors when sending NEP5 tokens (same goes in prompt.py).
+        # don't have time to investigate right now, so doing this as a hack to get things working properly
+        self.wallet.ToJson()
 
         # _walletdb_loop = task.LoopingCall(wallet.ProcessBlocks)
         # _walletdb_loop.start(1)

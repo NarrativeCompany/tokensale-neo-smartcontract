@@ -110,7 +110,7 @@ class NichePaymentHandler(BlockchainMain):
         from_address = self.get_address(event.event_payload[1])
         to_address = self.get_address(event.event_payload[2])
         raw_nrve_amount = event.event_payload[3]
-        # bl: it seems our TestNet contract vs. MainNet contracts are somehow returning different payload values, so detect which
+        # bl: there can be different data types returned in the amount payload for some reason, so detect which it is (BigInteger or bytes)
         if type(raw_nrve_amount) is BigInteger:
             print('BigInteger nrve_amount %s' % raw_nrve_amount)
             nrve_amount = raw_nrve_amount
