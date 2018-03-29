@@ -110,10 +110,8 @@ class NichePaymentHandler(BlockchainMain):
         raw_nrve_amount = event.event_payload[3]
         # bl: there can be different data types returned in the amount payload for some reason, so detect which it is (BigInteger/int or bytes)
         if isinstance(raw_nrve_amount, int):
-            print('BigInteger nrve_amount %s' % raw_nrve_amount)
             nrve_amount = raw_nrve_amount
         else:
-            print('non-BigInteger nrve_amount %s' % raw_nrve_amount)
             nrve_amount = int.from_bytes(raw_nrve_amount, 'little')
 
         # bl: event.tx_hash is a UInt256, so convert it to a hex string
