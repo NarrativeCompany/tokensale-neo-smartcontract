@@ -30,7 +30,7 @@ from time import sleep
 import pymysql.cursors
 from pymysql import MySQLError
 
-from neocore import BigInteger
+from boa.interop import BigInteger
 
 from neo.Core.Blockchain import Blockchain
 
