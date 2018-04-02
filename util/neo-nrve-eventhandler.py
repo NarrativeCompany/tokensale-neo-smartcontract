@@ -157,7 +157,7 @@ class TokenSaleEventHandler(BlockchainMain):
                     sql = ("insert into `NarrativeRefund` (transactionId, contractHash, neo, transactionDate, neoAddress)\n"
                            "values (%s, %s, %s, from_unixtime(%s), %s)")
                     args = (tx_hash, contract_hash, amount, timestamp, address)
-                    self.send_email("Narrative Refund Required", log, "brian@narrative.network")
+                    self.send_email("Narrative Refund Required", log)
                 elif event_type == 'transfer' or event_type == 'approve':
                     # bl: ignore NEP5 transfers and approvals. don't care about those, and there will be a lot!
                     return
@@ -192,11 +192,11 @@ class TokenSaleEventHandler(BlockchainMain):
                                charset='utf8mb4',
                                cursorclass=pymysql.cursors.DictCursor)
 
-    def send_email(self, subject, body, to_address):
+    def send_email(self, subject, body):
         msg = MIMEText(body)
         msg['Subject'] = subject
-        msg['From'] = "tokensale@narrative.network"
-        msg['To'] = to_address
+        msg['From'] = self.smtp_config['from_address']
+        msg['To'] = self.smtp_config['to_address']
 
         # Send the message via our own SMTP server.
         # bl: production servers user port 587

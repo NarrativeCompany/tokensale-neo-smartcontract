@@ -30,6 +30,9 @@ from time import sleep
 import pymysql.cursors
 from pymysql import MySQLError
 
+import smtplib
+from email.mime.text import MIMEText
+
 from neo.Core.Blockchain import Blockchain
 
 from neo.contrib.narrative.blockchain.main import BlockchainMain, NetworkType
@@ -45,13 +48,15 @@ class NichePaymentHandler(BlockchainMain):
 
     nrve_token_symbol = "NRVE"
     niche_payment_address = None
+    niche_payment_storage_address = None
 
     db_config = None
+    smtp_config = None
 
     wallet_needs_recovery = False
 
-    refunds_to_process = []
-    refund_tx_processing = None
+    transfers_to_process = []
+    transfer_tx_processing = None
 
     def __init__(self):
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'nrve-niche-config.json'), 'r') as f:
@@ -60,11 +65,14 @@ class NichePaymentHandler(BlockchainMain):
             network_wallets_config = json.load(f)
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'db-config.json'), 'r') as f:
             self.db_config = json.load(f)
+        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'smtp-config.json'), 'r') as f:
+            self.smtp_config = json.load(f)
 
         super().__init__(NetworkType[config['network']], 'nrve-niche-payment-handler')
 
         self.smart_contract = SmartContract(config['smart_contract'])
         self.niche_payment_address = config['niche_payment_address']
+        self.niche_payment_storage_address = config['niche_payment_storage_address']
 
         self.setup_wallet(network_wallets_config[config['network']]['wallet_path'])
 
@@ -117,14 +125,19 @@ class NichePaymentHandler(BlockchainMain):
         # bl: event.tx_hash is a UInt256, so convert it to a hex string
         tx_hash = event.tx_hash.ToString()
 
-        # if this is an outbound NRVE transfer from our payment wallet, then it's a refund!
+        # if this is an outbound NRVE transfer from our payment wallet, then it's a transfer!
         if from_address == self.niche_payment_address:
-            # in order to move on to the next refund, we just need to clear the tx, assuming it's the right one!
-            if self.refund_tx_processing and tx_hash == self.refund_tx_processing.ToString():
-                self.logger.info("- refund %s: to %s: %s NRVE (tx: %s)", event_type, to_address, nrve_amount, tx_hash)
-                self.refund_tx_processing = None
+            # in order to move on to the next transfer, we just need to clear the tx, assuming it's the right one!
+            if self.transfer_tx_processing and tx_hash == self.transfer_tx_processing.ToString():
+                if to_address == self.niche_payment_storage_address:
+                    self.logger.info("- payment storage %s: to %s: %s NRVE (tx: %s)", event_type, to_address, nrve_amount, tx_hash)
+                else:
+                    self.logger.info("- refund %s: to %s: %s NRVE (tx: %s)", event_type, to_address, nrve_amount, tx_hash)
+                self.transfer_tx_processing = None
             else:
-                self.logger.warn("- unexpected refund! %s: to %s: %s NRVE (tx: %s)", event_type, to_address, nrve_amount, tx_hash)
+                log = "%s: to %s: %s NRVE (tx: %s)" % (event_type, to_address, nrve_amount, tx_hash)
+                self.logger.warn("- unexpected outbound transfer! %s", log)
+                self.send_email("Unexpected Outbound Transfer", log)
             return
 
         # ignore transfers between other accounts. only care about payments to the niche payment address
@@ -145,7 +158,8 @@ class NichePaymentHandler(BlockchainMain):
 
         try:
             with connection.cursor() as cursor:
-                self.logger.info("- payment %s: from %s: %s NRVE (tx: %s)", event_type, from_address, nrve_amount, tx_hash)
+                log = "- payment %s: from %s: %s NRVE (tx: %s)" % (event_type, from_address, nrve_amount, tx_hash)
+                self.logger.info(log)
                 sql = ("select oid from `NicheAuctionInvoicePayment`\n"
                        "where fromNeoAddress = %s\n"
                        "and nrveAmount = %s\n"
@@ -157,11 +171,11 @@ class NichePaymentHandler(BlockchainMain):
 
                 if cursor.rowcount == 0:
                     self.logger.error('Failed identifying payment. Returning to sender: %s', event)
-                    self.refund_payment(from_address, nrve_amount)
+                    self.transfer_payment(from_address, nrve_amount)
                     return
                 elif cursor.rowcount > 1:
                     self.logger.error('FATAL! Identified multiple payments by unique key. Should not be possible! %s', event)
-                    self.refund_payment(from_address, nrve_amount)
+                    self.transfer_payment(from_address, nrve_amount)
                     return
 
                 # when a payment is outstanding, it will be recorded with the expected from address, the proper nrveAmount (in "neurons")
@@ -182,17 +196,38 @@ class NichePaymentHandler(BlockchainMain):
                     self.logger.error('Failed updating payment. Should not be possible since it was already locked for update: %s', event)
                     return
 
+                # send the NRVE to the payment storage address
+                self.transfer_payment(self.niche_payment_storage_address, nrve_amount)
+
+                self.send_email("Successful Niche Payment", log)
+
             # connection is not autocommit by default. So you must commit to save
             # your changes.
             connection.commit()
         except MySQLError as e:
-            self.logger.error('ERROR: event %s: {!r}, errno is {}'.format(event, e, e.args[0]))
+            error_message = 'ERROR: event %s: {!r}, errno is {}'.format(event, e, e.args[0])
+            self.logger.error(error_message)
+            self.send_email('Niche Payment Error', error_message)
         finally:
             connection.close()
 
-    def refund_payment(self, from_address, nrve_amount):
-        self.refunds_to_process.append([from_address,nrve_amount])
-        print('refunds_to_process %s', self.refunds_to_process)
+    def send_email(self, subject, body):
+        msg = MIMEText(body)
+        msg['Subject'] = subject
+        msg['From'] = self.smtp_config['from_address']
+        msg['To'] = self.smtp_config['to_address']
+
+        # Send the message via our own SMTP server.
+        # bl: production servers user port 587
+        s = smtplib.SMTP(self.smtp_config['host'], self.smtp_config['port'])
+        if self.smtp_config['use_tls']:
+            s.starttls()
+        s.send_message(msg)
+        s.quit()
+
+    def transfer_payment(self, from_address, nrve_amount):
+        self.transfers_to_process.append([from_address,nrve_amount])
+        print('transfers_to_process %s', self.transfers_to_process)
 
     def custom_background_code(self):
         count = 0
@@ -204,12 +239,12 @@ class NichePaymentHandler(BlockchainMain):
                 self.logger.info("Block %s / %s", str(Blockchain.Default().Height), str(Blockchain.Default().HeaderHeight))
                 count = 0
 
-            # already have a refund that we are waiting to process? then just keep waiting until that transaction comes through
-            if self.refund_tx_processing:
+            # already have a transfer that we are waiting to process? then just keep waiting until that transaction comes through
+            if self.transfer_tx_processing:
                 continue
 
-            # no refunds? then keep waiting
-            if not self.refunds_to_process:
+            # no transfers? then keep waiting
+            if not self.transfers_to_process:
                 continue
 
             if self.wallet_needs_recovery:
@@ -218,25 +253,29 @@ class NichePaymentHandler(BlockchainMain):
             else:
                 self.wallet_sync()
 
-            refund = self.refunds_to_process[0]
-            self.refunds_to_process = self.refunds_to_process[1:]
-            if len(refund) != 2:
-                self.logger.error('ERROR! refunds must have exactly 2 args. skipping! %s', refund)
+            transfer = self.transfers_to_process[0]
+            self.transfers_to_process = self.transfers_to_process[1:]
+            if len(transfer) != 2:
+                self.logger.error('ERROR! transfer must have exactly 2 args. skipping! %s', transfer)
                 continue
 
-            self.logger.debug('processing refund: %s', refund)
+            to_address = transfer[0]
+            if to_address == self.niche_payment_storage_address:
+                self.logger.debug('processing payment storage: %s', transfer)
+            else:
+                self.logger.debug('processing refund: %s', transfer)
             token = get_asset_id(self.wallet, self.nrve_token_symbol)
             print('found token %s', token)
-            result = do_token_transfer(token, self.wallet, self.niche_payment_address, refund[0], refund[1], False)
+            result = do_token_transfer(token, self.wallet, self.niche_payment_address, to_address, transfer[1], False)
 
             if not result:
                 # transaction failed? wallet probably out-of-sync (insufficient funds) so reload it
                 self.wallet_needs_recovery = True
-                # we need to try to process this refund again, so add it back in to the list
-                self.refunds_to_process = [refund] + self.refunds_to_process
+                # we need to try to process this transfer again, so add it back in to the list
+                self.transfers_to_process = [transfer] + self.transfers_to_process
             else:
                 # transaction successfully relayed? then let's set the tx Hash that we're waiting for
-                self.refund_tx_processing = result.Hash
+                self.transfer_tx_processing = result.Hash
 
 
 def main():

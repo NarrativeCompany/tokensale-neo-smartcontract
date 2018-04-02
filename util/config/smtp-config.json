@@ -1,5 +1,7 @@
 {
   "host" : "localhost",
   "port" : 25,
-  "use_tls" : false
+  "use_tls" : false,
+  "from_address" : "",
+  "to_address" : ""
 }

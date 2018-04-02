@@ -1,5 +1,6 @@
 {
   "network" : "PRIVNET",
   "smart_contract" : "",
-  "niche_payment_address" : ""
+  "niche_payment_address" : "",
+  "niche_payment_storage_address" : ""
 }
