@@ -4,3 +4,4 @@ venv
 .idea
 *.iml
 __pycache__
+.python-version
