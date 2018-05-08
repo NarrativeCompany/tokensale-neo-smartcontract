@@ -134,6 +134,7 @@ class BlockchainMain:
 
     def wallet_close(self):
         # _walletdb_loop.stop()
+        self.wallet_sync()
         self.wallet.Close()
 
     def recover_wallet(self):

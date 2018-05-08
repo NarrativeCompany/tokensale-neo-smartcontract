@@ -1,0 +1,9 @@
+{
+  "operation" : "transfer_company_tokens",
+  "operation_args_array_length" : 2,
+  "expected_result_count" : 1,
+
+  "jobs" : [
+    "['AMeYyyxdUNMSoisNXbtVXNgN5PrK4bm6FX',2000000000]"
+  ]
+}

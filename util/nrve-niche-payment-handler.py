@@ -130,9 +130,9 @@ class NichePaymentHandler(BlockchainMain):
             # in order to move on to the next transfer, we just need to clear the tx, assuming it's the right one!
             if self.transfer_tx_processing and tx_hash == self.transfer_tx_processing.ToString():
                 if to_address == self.niche_payment_storage_address:
-                    self.logger.info("- payment storage %s: to %s: %s NRVE (tx: %s)", event_type, to_address, nrve_amount, tx_hash)
+                    self.logger.info("- completed payment storage %s: to %s: %s NRVE (tx: %s)", event_type, to_address, nrve_amount, tx_hash)
                 else:
-                    self.logger.info("- refund %s: to %s: %s NRVE (tx: %s)", event_type, to_address, nrve_amount, tx_hash)
+                    self.logger.info("- completed refund %s: to %s: %s NRVE (tx: %s)", event_type, to_address, nrve_amount, tx_hash)
                 self.transfer_tx_processing = None
             else:
                 log = "%s: to %s: %s NRVE (tx: %s)" % (event_type, to_address, nrve_amount, tx_hash)
