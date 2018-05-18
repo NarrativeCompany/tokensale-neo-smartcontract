@@ -157,7 +157,7 @@ class BlockchainMain:
 
     def test_invoke(self, args, expected_result_count, test_only=False, from_addr=None):
         if args and len(args) > 0:
-            tx, fee, results, num_ops = TestInvokeContract(self.wallet, args, from_addr=from_addr, min_fee=Fixed8.FromDecimal(.0004))
+            tx, fee, results, num_ops = TestInvokeContract(self.wallet, args, from_addr=from_addr)
 
             if tx is not None and results is not None:
                 print(

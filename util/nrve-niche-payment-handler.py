@@ -50,6 +50,8 @@ class NichePaymentHandler(BlockchainMain):
     niche_payment_address = None
     niche_payment_storage_address = None
 
+    ignore_blocks_older_than = None
+
     db_config = None
     smtp_config = None
 
@@ -73,6 +75,7 @@ class NichePaymentHandler(BlockchainMain):
         self.smart_contract = SmartContract(config['smart_contract'])
         self.niche_payment_address = config['niche_payment_address']
         self.niche_payment_storage_address = config['niche_payment_storage_address']
+        self.ignore_blocks_older_than = config['ignore_blocks_older_than']
 
         self.setup_wallet(network_wallets_config[config['network']]['wallet_path'])
 
@@ -101,6 +104,11 @@ class NichePaymentHandler(BlockchainMain):
 
         if not event.execution_success:
             self.logger.info("[execution_success=false] SmartContract Runtime.Notify event: %s", event)
+            return
+
+        block_number = event.block_number
+
+        if self.ignore_blocks_older_than and block_number < self.ignore_blocks_older_than:
             return
 
         # The event payload list has at least one element. As developer of the smart contract
@@ -143,8 +151,6 @@ class NichePaymentHandler(BlockchainMain):
         # ignore transfers between other accounts. only care about payments to the niche payment address
         if to_address != self.niche_payment_address:
             return
-
-        block_number = event.block_number
 
         timestamp = self.blockchain.GetHeaderByHeight(block_number).Timestamp
 
