@@ -120,6 +120,8 @@ class NichePaymentHandler(BlockchainMain):
         if event_type != 'transfer':
             return
 
+        self.logger.info("[event_payload] Processing event: %s", event)
+
         # from, to, amount
         from_address = self.get_address(event.event_payload[1])
         to_address = self.get_address(event.event_payload[2])
@@ -152,7 +154,11 @@ class NichePaymentHandler(BlockchainMain):
         if to_address != self.niche_payment_address:
             return
 
-        timestamp = self.blockchain.GetHeaderByHeight(block_number).Timestamp
+        self.logger.info("Loading block %s", block_number)
+        block = self.blockchain.GetHeaderByHeight(block_number)
+        self.logger.info("Block %s loaded: %s" % (block_number, block))
+
+        timestamp = block.Timestamp
 
         # Connect to the database
         connection = pymysql.connect(host=self.db_config['host'],
