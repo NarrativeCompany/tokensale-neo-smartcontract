@@ -95,7 +95,7 @@ class BlockchainMain:
     def get_address(raw_address):
         # bl: NEO uses the AddressVersion 23, so stick that on the front of the address before doing the b58check
         raw_address = b'\x17' + raw_address
-        return b58encode_check(raw_address)
+        return b58encode_check(raw_address).decode('utf-8')
 
     def setup_wallet(self, wallet_path):
         if not os.path.exists(wallet_path):
