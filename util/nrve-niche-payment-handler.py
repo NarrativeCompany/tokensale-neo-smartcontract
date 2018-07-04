@@ -152,6 +152,7 @@ class NichePaymentHandler(BlockchainMain):
 
         # ignore transfers between other accounts. only care about payments to the niche payment address
         if to_address != self.niche_payment_address:
+            self.logger.info("- ignoring unknown %s: to %s; not %s", event_type, to_address, self.niche_payment_address)
             return
 
         self.logger.info("Loading block %s", block_number)
