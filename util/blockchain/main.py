@@ -43,6 +43,8 @@ class BlockchainMain:
 
     def run(self):
 
+        settings.set_max_peers(150)
+
         # Setup the blockchain
         self.blockchain = LevelDBBlockchain(settings.chain_leveldb_path)
         Blockchain.RegisterBlockchain(self.blockchain)
