@@ -171,8 +171,8 @@ class NichePaymentHandler(BlockchainMain):
                     )
                     return
 
-                # when a payment is outstanding, it will be recorded with the expected "from address", the proper nrve
-                # amount (in "neurons") and a paymentStatus of 0 which indicates it's pending payment
+                # when a payment is outstanding, it will be recorded with the expected "from address", the proper
+                # nrveAmount (in "neurons") and a paymentStatus of 0 which indicates it's pending payment
                 sql = ("update `NicheAuctionInvoicePayment`\n"
                        "set transactionId = %s\n"
                        ", transactionDate = from_unixtime(%s)\n"
