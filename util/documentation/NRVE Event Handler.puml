@@ -1,0 +1,70 @@
+@startuml
+title Event Handler Sequence (Tx Found)
+participant Blockchain as bc
+participant "Event Handler" as ev
+participant DB as db
+participant Email as e
+
+activate ev #darkSalmon
+activate bc
+bc -> ev : Incoming transaction
+deactivate bc
+ev -> ev : Process **"transfer"** NRVE transactions
+ev -> db : Select for update to find \n null transaction Ids
+activate db #skyBlue
+db -> ev : 1 match
+deactivate db
+ev -> db : Populate **transaction Id & date**
+activate db #skyBlue
+deactivate db
+ev -> e : Send email
+deactivate ev
+@enduml
+
+@startuml
+title Event Handler Sequence (Refund)
+participant Blockchain as bc
+participant "Event Handler" as ev
+participant DB as db
+participant Email as e
+
+activate ev #darkSalmon
+activate bc
+bc -> ev : Incoming transaction
+deactivate bc
+ev -> ev : Process **"transfer"** NRVE transactions
+ev -> db : Select for update to find \n null transaction Ids
+activate db #skyBlue
+db -> ev : No match
+deactivate db
+ev -> db : Verify if \n transaction was a \n Refund or already processed \n in a different thread
+activate db #skyBlue
+db -> ev : No records found
+deactivate db
+ev -> e : Send email
+deactivate ev
+@enduml
+
+@startuml
+title Event Handler Sequence (Processed by a different thread)
+participant Blockchain as bc
+participant "Event Handler" as ev
+participant DB as db
+participant Email as e
+
+activate ev #darkSalmon
+activate bc
+bc -> ev : Incoming transaction
+deactivate bc
+ev -> ev : Process **"transfer"** NRVE transactions
+ev -> db : Select for update to find \n null transaction Ids
+activate db #skyBlue
+db -> ev : No match
+deactivate db
+ev -> db : Verify if \n transaction was a \n Refund or already processed \n in a different thread
+activate db #skyBlue
+db -> ev : 1 match with non-null Transaction Id
+deactivate db
+ev -> ev : Do nothing.
+deactivate ev
+@enduml
