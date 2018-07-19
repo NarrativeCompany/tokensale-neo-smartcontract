@@ -95,8 +95,6 @@ class NichePaymentHandler(BlockchainMain):
             self.logger.info("[execution_success=false] SmartContract Runtime.Notify event: %s", event)
             return
 
-        block_number = event.block_number
-
         # The event payload list has at least one element. As developer of the smart contract
         # you should know what data-type is in the bytes, and how to decode it. In this example,
         # it's just a string, so we decode it with utf-8:
@@ -127,11 +125,10 @@ class NichePaymentHandler(BlockchainMain):
 
         # bl: event.tx_hash is a UInt256, so convert it to a hex string
         tx_hash = event.tx_hash.ToString()
-        block = self.blockchain.GetHeaderByHeight(block_number)
 
-        self.process_nrve_transaction(event, event_type, block, from_address, nrve_amount, tx_hash)
+        self.process_nrve_transaction(event, event_type, from_address, nrve_amount, tx_hash)
 
-    def process_nrve_transaction(self, event, event_type, block, from_address, nrve_amount, tx_hash):
+    def process_nrve_transaction(self, event, event_type, from_address, nrve_amount, tx_hash):
 
         # Connect to the database
         connection = pymysql.connect(host=self.db_config['host'],
@@ -170,6 +167,8 @@ class NichePaymentHandler(BlockchainMain):
                         self.format_error_message({"Transaction Id": tx_hash}, {"From Address": from_address}, {"NRVE Amount": nrve_amount}, {"Number of Transactions": cursor.rowcount})
                     )
                     return
+
+                block = self.blockchain.GetHeaderByHeight(event.block_number)
 
                 # when a payment is outstanding, it will be recorded with the expected "from address", the proper
                 # nrveAmount (in "neurons") and a paymentStatus of 0 which indicates it's pending payment
