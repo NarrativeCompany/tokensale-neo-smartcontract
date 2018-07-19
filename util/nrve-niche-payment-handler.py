@@ -251,11 +251,6 @@ class NichePaymentHandler(BlockchainMain):
         s.send_message(msg)
         s.quit()
 
-    # @staticmethod
-    # def format_error_message(tx_hash, from_address, nrve_amount, number_of_transactions=''):
-    #     optional_message = "\nNumber of Transactions: " + str(number_of_transactions) if number_of_transactions != '' else ''
-    #     return "TransactionId: " + tx_hash + "\nFrom: " + from_address + "\nNRVE Amount: " + nrve_amount + optional_message
-
     @staticmethod
     def format_error_message(*args):
         message = ''

@@ -2,6 +2,6 @@
   "host" : "localhost",
   "port" : 25,
   "use_tls" : false,
-  "from_address" : "",
-  "to_address" : ""
+  "from_address" : "mark.remi@narrative.com",
+  "to_address" : "mark.remi@narrative.com"
 }

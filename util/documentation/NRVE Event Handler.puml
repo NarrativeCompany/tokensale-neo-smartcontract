@@ -1,5 +1,5 @@
 @startuml
-title Event Handler Sequence (Tx Found)
+title NRVE Niche Handler (Tx Found)
 participant Blockchain as bc
 participant "Event Handler" as ev
 participant DB as db
@@ -18,11 +18,13 @@ ev -> db : Populate **transaction Id & date**
 activate db #skyBlue
 deactivate db
 ev -> e : Send email
+activate e #orange
 deactivate ev
+deactivate e
 @enduml
 
 @startuml
-title Event Handler Sequence (Refund)
+title NRVE Niche Handler (Refund)
 participant Blockchain as bc
 participant "Event Handler" as ev
 participant DB as db
@@ -42,11 +44,13 @@ activate db #skyBlue
 db -> ev : No records found
 deactivate db
 ev -> e : Send email
+activate e #orange
 deactivate ev
+deactivate e
 @enduml
 
 @startuml
-title Event Handler Sequence (Processed by a different thread)
+title NRVE Niche Handler (Processed by a different thread)
 participant Blockchain as bc
 participant "Event Handler" as ev
 participant DB as db
