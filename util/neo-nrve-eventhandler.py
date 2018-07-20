@@ -33,6 +33,7 @@ from time import sleep
 from neo.Core.Blockchain import Blockchain
 
 from neo.contrib.smartcontract import SmartContract
+from neo.SmartContract.ContractParameter import ContractParameter, ContractParameterType
 
 from neo.contrib.narrative.blockchain.main import BlockchainMain, NetworkType
 
@@ -93,8 +94,16 @@ class TokenSaleEventHandler(BlockchainMain):
 
     def sc_notify(self, event):
 
+        event_payload = event.event_payload
+
+        if not isinstance(event_payload, ContractParameter) or event_payload.Type != ContractParameterType.Array:
+            self.logger.info("[invalid event_payload] SmartContract Runtime.Notify event: %s", event)
+            return
+
+        payload = event_payload.Value
+
         # Make sure that the event payload list has at least one element.
-        if not len(event.event_payload):
+        if not len(payload):
             self.logger.info("[no event_payload] SmartContract Runtime.Notify event: %s", event)
             return
 
@@ -109,7 +118,7 @@ class TokenSaleEventHandler(BlockchainMain):
         # The event payload list has at least one element. As developer of the smart contract
         # you should know what data-type is in the bytes, and how to decode it. In this example,
         # it's just a string, so we decode it with utf-8:
-        event_type = event.event_payload[0].decode("utf-8")
+        event_type = payload[0].Value.decode("utf-8")
         block_number = event.block_number
 
         if self.ignore_blocks_older_than and block_number < self.ignore_blocks_older_than:
@@ -131,16 +140,16 @@ class TokenSaleEventHandler(BlockchainMain):
         try:
             with connection.cursor() as cursor:
                 if event_type == 'kyc_registration' or event_type == 'kyc_deregistration':
-                    address = self.get_address(event.event_payload[1])
+                    address = self.get_address(payload[1].Value)
                     self.logger.info("- %s: %s", event_type, address)
                     sql = "update `NarrativeUserNeoAddress` set whitelisted = %s where neoAddress = %s"
                     args = (1 if event_type == 'kyc_registration' else 0, address)
                 elif event_type == 'contribution':
                     # from, neo, tokens
-                    address = self.get_address(event.event_payload[1])
+                    address = self.get_address(payload[1].Value)
                     # based on the smart contract, we know these should always be whole numbers
-                    neo = (int)(event.event_payload[2] / 100000000)
-                    tokens = (int)(event.event_payload[3] / 100000000)
+                    neo = (int)(payload[2].Value / 100000000)
+                    tokens = (int)(payload[3].Value / 100000000)
                     self.logger.info("- %s: %s: %s NEO (%s NRVE) (tx: %s)", event_type, address, neo, tokens, tx_hash)
                     sql = ("insert into `NarrativeContribution` (transactionId, neo, nrveTokens, transactionDate, neoAddress_oid)\n"
                            "select %s, %s, %s, from_unixtime(%s), na.oid\n"
@@ -149,9 +158,9 @@ class TokenSaleEventHandler(BlockchainMain):
                     args = (tx_hash, neo, tokens, timestamp, address)
                 elif event_type == 'refund':
                     # to, amount
-                    address = self.get_address(event.event_payload[1])
+                    address = self.get_address(payload[1].Value)
                     # based on the smart contract, the amount should always be a whole number
-                    amount = (int)(event.event_payload[2] / 100000000)
+                    amount = (int)(payload[2].Value / 100000000)
                     log = "%s: %s: %s NEO [%s] (tx: %s)" % (event_type, address, amount, contract_hash, tx_hash)
                     self.logger.info('- ' + log)
                     sql = ("insert into `NarrativeRefund` (transactionId, contractHash, neo, transactionDate, neoAddress)\n"
