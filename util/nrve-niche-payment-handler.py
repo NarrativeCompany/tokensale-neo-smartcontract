@@ -123,7 +123,7 @@ class NichePaymentHandler(BlockchainMain):
         # The event payload list has at least one element. As developer of the smart contract
         # you should know what data-type is in the bytes, and how to decode it. In this example,
         # it's just a string, so we decode it with utf-8:
-        event_type = payload[0].decode("utf-8")
+        event_type = payload[0].Value.decode("utf-8")
 
         # only looking for transfer events, so ignore everything else
         if event_type != 'transfer':
@@ -132,9 +132,9 @@ class NichePaymentHandler(BlockchainMain):
         self.logger.info("[event_payload] Processing event: %s", event)
 
         # from, to, amount
-        from_address = self.get_address(payload[1])
-        to_address = self.get_address(payload[2])
-        raw_nrve_amount = payload[3]
+        from_address = self.get_address(payload[1].Value)
+        to_address = self.get_address(payload[2].Value)
+        raw_nrve_amount = payload[3].Value
         # bl: there can be different data types returned in the amount payload for some reason, so detect which it is (BigInteger/int or bytes)
         if isinstance(raw_nrve_amount, int):
             nrve_amount = raw_nrve_amount
