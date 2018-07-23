@@ -26,14 +26,11 @@ python neo/contrib/neo-niche-payment-handler.py
 import os
 import json
 import traceback
-from time import sleep
 import pymysql.cursors
 from pymysql import MySQLError
 
 import smtplib
 from email.mime.text import MIMEText
-
-from neo.Core.Blockchain import Blockchain
 
 from neo.contrib.narrative.blockchain.main import BlockchainMain, NetworkType
 from neo.contrib.smartcontract import SmartContract
