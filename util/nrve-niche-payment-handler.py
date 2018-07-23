@@ -156,7 +156,7 @@ class NichePaymentHandler(BlockchainMain):
                     # This could be one of two scenarios:
                     #   1. Transaction does not exist, making it invalid (Refund).
                     #   2. Transaction was processed by a different thread (transactionId has been updated to a non-null value).
-                    self.validate_transaction(connection, event, from_address, nrve_amount, tx_hash)
+                    self.handle_unknown_transaction(connection, event, from_address, nrve_amount, tx_hash)
                     return
 
                 elif cursor.rowcount > 1:
@@ -206,7 +206,7 @@ class NichePaymentHandler(BlockchainMain):
         finally:
             connection.close()
 
-    def validate_transaction(self, connection, event, from_address, nrve_amount, tx_hash):
+    def handle_unknown_transaction(self, connection, event, from_address, nrve_amount, tx_hash):
 
         try:
             with connection.cursor() as cursor:
@@ -218,7 +218,7 @@ class NichePaymentHandler(BlockchainMain):
 
                 if cursor.rowcount == 0:
                     # Send refund email
-                    subject = 'Failed identifying payment. Returning to sender'
+                    subject = 'Failed identifying niche payment. Refund required!'
                     self.logger.error(subject + ': %s', event)
                     self.send_email(
                         subject,
@@ -229,6 +229,10 @@ class NichePaymentHandler(BlockchainMain):
                 elif cursor.rowcount == 1:
                     # Transaction is valid, no need to process any further.
                     self.logger.debug("Transaction %s was already processed by a different thread.", tx_hash)
+                    return
+
+                else:
+                    self.logger.error("FATAL! Found %s records for transaction %s. ", cursor.rowcount, tx_hash)
                     return
 
         except MySQLError as e:
