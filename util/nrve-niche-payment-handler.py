@@ -37,7 +37,6 @@ from neo.Core.Blockchain import Blockchain
 
 from neo.contrib.narrative.blockchain.main import BlockchainMain, NetworkType
 from neo.contrib.smartcontract import SmartContract
-from neo.SmartContract.ContractParameter import ContractParameter, ContractParameterType
 
 
 class NichePaymentHandler(BlockchainMain):
@@ -83,16 +82,8 @@ class NichePaymentHandler(BlockchainMain):
 
     def do_sc_notify(self, event):
 
-        event_payload = event.event_payload
-
-        if not isinstance(event_payload, ContractParameter) or event_payload.Type != ContractParameterType.Array:
-            self.logger.info("[invalid event_payload] SmartContract Runtime.Notify event: %s", event)
-            return
-
-        payload = event_payload.Value
-
         # Make sure that the event payload list has at least one element.
-        if not len(payload):
+        if not len(event.event_payload):
             self.logger.info("[no event_payload] SmartContract Runtime.Notify event: %s", event)
             return
 
@@ -107,7 +98,7 @@ class NichePaymentHandler(BlockchainMain):
         # The event payload list has at least one element. As developer of the smart contract
         # you should know what data-type is in the bytes, and how to decode it. In this example,
         # it's just a string, so we decode it with utf-8:
-        event_type = payload[0].Value.decode("utf-8")
+        event_type = event.event_payload[0].decode("utf-8")
 
         # Only looking for transfer events, so ignore everything else
         if event_type != 'transfer':
@@ -116,7 +107,7 @@ class NichePaymentHandler(BlockchainMain):
         self.logger.info("[event_payload] Processing event: %s", event)
 
         # To address
-        to_address = self.get_address(event.event_payload[2].Value)
+        to_address = self.get_address(event.event_payload[2])
 
         # Ignore transfers between other accounts. only care about payments to the niche payment address
         if to_address != self.niche_payment_address:
