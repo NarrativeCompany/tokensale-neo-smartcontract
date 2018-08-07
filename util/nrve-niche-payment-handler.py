@@ -239,7 +239,7 @@ class NichePaymentHandler(BlockchainMain):
 
                 elif cursor.rowcount == 1:
                     # Transaction is valid, no need to process any further.
-                    self.logger.debug("Transaction %s was already processed by a different thread.", tx_hash)
+                    self.logger.info("Transaction %s was already processed by a different thread.", tx_hash)
                     return
 
                 else:
