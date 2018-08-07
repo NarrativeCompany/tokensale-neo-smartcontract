@@ -69,6 +69,8 @@ class NichePaymentHandler(BlockchainMain):
         self.smart_contract = SmartContract(config['smart_contract'])
         self.niche_payment_address = config['niche_payment_address']
 
+        self.setup_network()
+
         # decorate the event handler methods dynamically now that we have loaded the SC
         self.sc_notify = self.smart_contract.on_notify(self.sc_notify)
 
