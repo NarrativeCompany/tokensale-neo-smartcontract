@@ -262,6 +262,8 @@ class NichePaymentHandler(BlockchainMain):
         s = smtplib.SMTP(self.smtp_config['host'], self.smtp_config['port'])
         if self.smtp_config['use_tls']:
             s.starttls()
+        if self.smtp_config['username']:
+            s.login(self.smtp_config['username'], self.smtp_config['password'])
         s.send_message(msg)
         s.quit()
 

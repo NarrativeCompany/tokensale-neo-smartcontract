@@ -1,7 +1,9 @@
 {
-  "host" : "localhost",
-  "port" : 25,
+  "host" : "smtp.sendgrid.net",
+  "port" : 587,
+  "username" : "apikey",
+  "password" : "API_KEY_GOES_HERE",
   "use_tls" : false,
-  "from_address" : "",
-  "to_address" : ""
+  "from_address" : "alerts@narrative.org",
+  "to_address" : "brian@narrative.org"
 }
