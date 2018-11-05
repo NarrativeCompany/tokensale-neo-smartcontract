@@ -26,14 +26,11 @@ python neo/contrib/neo-niche-payment-handler.py
 import os
 import json
 import traceback
-from time import sleep
 import pymysql.cursors
 from pymysql import MySQLError
 
 import smtplib
 from email.mime.text import MIMEText
-
-from neo.Core.Blockchain import Blockchain
 
 from neo.contrib.narrative.blockchain.main import BlockchainMain, NetworkType
 from neo.contrib.smartcontract import SmartContract
@@ -175,7 +172,7 @@ class NichePaymentHandler(BlockchainMain):
                     self.logger.error(subject + ': %s', event)
                     self.send_email(
                         subject,
-                        self.format_error_message({"Transaction Id": tx_hash}, {"From Address": from_address}, {"NRVE Amount": nrve_amount}, {"Number of Transactions": cursor.rowcount})
+                        self.format_error_message({"Transaction Id": tx_hash}, {"From Address": from_address}, {"To Address": self.niche_payment_address}, {"NRVE Amount": nrve_amount}, {"Number of Transactions": cursor.rowcount})
                     )
                     return
 
@@ -200,7 +197,7 @@ class NichePaymentHandler(BlockchainMain):
                     self.logger.error(subject + ': %s', event)
                     self.send_email(
                         subject,
-                        self.format_error_message({"Transaction Id": tx_hash}, {"From Address": from_address}, {"NRVE Amount": nrve_amount})
+                        self.format_error_message({"Transaction Id": tx_hash}, {"From Address": from_address}, {"To Address": self.niche_payment_address}, {"NRVE Amount": nrve_amount})
                     )
                     return
 
@@ -229,11 +226,11 @@ class NichePaymentHandler(BlockchainMain):
 
                 if cursor.rowcount == 0:
                     # Send refund email
-                    subject = 'Failed identifying niche payment. Refund required!'
+                    subject = 'Failed identifying niche payment. ' + self.network_type + ' refund required!'
                     self.logger.error(subject + ': %s', event)
                     self.send_email(
                         subject,
-                        self.format_error_message({"Transaction Id": tx_hash}, {"From Address": from_address}, {"NRVE Amount": nrve_amount})
+                        self.format_error_message({"Transaction Id": tx_hash}, {"From Address": from_address}, {"To Address": self.niche_payment_address}, {"NRVE Amount": nrve_amount})
                     )
                     return
 
@@ -254,7 +251,7 @@ class NichePaymentHandler(BlockchainMain):
     def send_email(self, subject, body):
         msg = MIMEText(body)
         msg['Subject'] = subject
-        msg['From'] = self.smtp_config['from_address']
+        msg['From'] = 'Narrative ' + self.network_type + ' <' + self.smtp_config['from_address'] + '>'
         msg['To'] = self.smtp_config['to_address']
 
         # Send the message via our own SMTP server.
@@ -272,7 +269,9 @@ class NichePaymentHandler(BlockchainMain):
         message = ''
         for eachDict in args:
             for key, value in eachDict.items():
-                message += "\n" + str(key) + ": " + str(value)
+                if message != '':
+                    message += "\n"
+                message += str(key) + ": " + str(value)
         return message
 
 
