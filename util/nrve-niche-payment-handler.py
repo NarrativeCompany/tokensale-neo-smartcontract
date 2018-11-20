@@ -183,6 +183,7 @@ class NichePaymentHandler(BlockchainMain):
                 sql = ("update `NicheAuctionInvoicePayment`\n"
                        "set transactionId = %s\n"
                        ", transactionDate = from_unixtime(%s)\n"
+                       ", foundByExternalApi = 0\n"
                        "where fromNeoAddress = %s\n"
                        "and nrveAmount = %s\n"
                        "and paymentStatus = 0\n"

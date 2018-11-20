@@ -43,7 +43,8 @@ class BlockchainMain:
 
     def run(self):
 
-        settings.set_max_peers(150)
+        # bl: changing to 8 as recommended in the 8-10 range by localhuman (previously had this at 150)
+        settings.set_max_peers(8)
 
         # Setup the blockchain
         self.blockchain = LevelDBBlockchain(settings.chain_leveldb_path)
