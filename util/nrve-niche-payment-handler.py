@@ -150,7 +150,7 @@ class NichePaymentHandler(BlockchainMain):
             with connection.cursor() as cursor:
                 log = "- payment %s: from %s: %s NRVE (tx: %s)" % (event_type, from_address, nrve_amount, tx_hash)
                 self.logger.info(log)
-                sql = ("select oid from `NicheAuctionInvoicePayment`\n"
+                sql = ("select oid from `NrvePayment`\n"
                        "where fromNeoAddress = %s\n"
                        "and nrveAmount = %s\n"
                        "and paymentStatus = 0\n"
@@ -180,7 +180,7 @@ class NichePaymentHandler(BlockchainMain):
 
                 # when a payment is outstanding, it will be recorded with the expected "from address", the proper
                 # nrveAmount (in "neurons") and a paymentStatus of 0 which indicates it's pending payment
-                sql = ("update `NicheAuctionInvoicePayment`\n"
+                sql = ("update `NrvePayment`\n"
                        "set transactionId = %s\n"
                        ", transactionDate = from_unixtime(%s)\n"
                        ", foundByExternalApi = 0\n"
@@ -220,7 +220,7 @@ class NichePaymentHandler(BlockchainMain):
         try:
             with connection.cursor() as cursor:
                 sql = (
-                    "select oid from `NicheAuctionInvoicePayment` where transactionId = %s;"
+                    "select oid from `NrvePayment` where transactionId = %s;"
                 )
                 params = tx_hash
                 cursor.execute(sql, params)
