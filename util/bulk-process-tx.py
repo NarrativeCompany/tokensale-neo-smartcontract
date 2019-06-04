@@ -33,7 +33,7 @@ from neo.Core.Blockchain import Blockchain
 from neo.contrib.smartcontract import SmartContract
 
 from neo.Prompt.Utils import parse_param
-from neo.Prompt.Commands.Send import construct_and_send
+# from neo.Prompt.Commands.Send import construct_and_send
 
 from pyparsing import ZeroOrMore, Regex
 
@@ -212,7 +212,8 @@ class BulkProcess(BlockchainMain):
         self.logger.debug('processing refund: %s', self.job)
         # in case we have to rebuild the wallet and try the job again, pass in a new list to construct_and_send
         # since internally the method actually has a side effect of modifying the array to strip out the from address
-        result = construct_and_send(None, self.wallet, list(self.job), False)
+        raise ValueError("construct_and_send is no longer supported. need to update if you want to use this.")
+        # result = construct_and_send(None, self.wallet, list(self.job), False)
 
         if not result:
             self.wallet_needs_recovery = True
