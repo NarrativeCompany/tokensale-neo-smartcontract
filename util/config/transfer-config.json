@@ -1,10 +1,14 @@
 {
-  "1234": {
-    "to_address": "AKuQyhmTuJdeeTWaSVEnhMEje1Bu3ns9MC",
-    "amount": 1998200000000
-  },
-  "5678": {
-    "to_address": "AcXBgvnxZBkeRBzWYEXVnH33JxL49oS74x",
-    "amount": 1053700000000
+  "total_transactions": 2,
+  "total_nrve": 3051900000000,
+  "transfers": {
+    "1234": {
+      "to_address": "AKuQyhmTuJdeeTWaSVEnhMEje1Bu3ns9MC",
+      "amount": 1998200000000
+    },
+    "5678": {
+      "to_address": "AcXBgvnxZBkeRBzWYEXVnH33JxL49oS74x",
+      "amount": 1053700000000
+    }
   }
 }
