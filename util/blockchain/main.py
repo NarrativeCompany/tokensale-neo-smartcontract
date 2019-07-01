@@ -31,6 +31,7 @@ class BlockchainMain:
     blockchain = None
 
     wallet_path = None
+    syncd_wallet_path = None
     wallet = None
     wallet_passwd_key = None
 
@@ -105,6 +106,11 @@ class BlockchainMain:
             raise ValueError("Wallet file not found")
 
         self.wallet_path = wallet_path
+        self.syncd_wallet_path = wallet_path + ".syncd"
+
+        if not os.path.exists(self.syncd_wallet_path):
+            self.logger.info("Creating syncd copy of wallet file...")
+            copyfile(self.wallet_path, self.syncd_wallet_path)
 
         wallet_passwd = prompt("[password]> ", is_password=True)
         self.wallet_passwd_key = to_aes_key(wallet_passwd)
@@ -142,13 +148,12 @@ class BlockchainMain:
 
     def recover_wallet(self):
         self.logger.warn("recovering wallet...")
-        syncd_file_path = self.wallet_path + ".syncd"
         # check if the syncd wallet exists, and raise an exception if it does not!
-        if not os.path.exists(syncd_file_path):
-            raise EnvironmentError("Could not find file %s" % syncd_file_path)
+        if not os.path.exists(self.syncd_wallet_path):
+            raise EnvironmentError("Could not find file %s" % self.syncd_wallet_path)
         self.wallet_close()
         os.remove(self.wallet_path)
-        copyfile(syncd_file_path, self.wallet_path)
+        copyfile(self.syncd_wallet_path, self.wallet_path)
         self.wallet_open()
         self.wallet_sync()
         self.logger.warn("wallet recovered!")
