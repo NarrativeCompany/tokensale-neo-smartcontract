@@ -21,7 +21,7 @@ source venv/bin/activate
 # bl: these only need to be done once
 #pip install -U setuptools pip wheel
 #pip install -e .
-python neo/contrib/bulk-process-tx.py
+python neo/contrib/bulk_process_tx.py
 
 """
 import os
@@ -64,15 +64,17 @@ class BulkProcess(BlockchainMain):
     jobs_processed = 0
     tx_processing = None
 
-    def __init__(self):
-        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'bulk-tx-config.json'), 'r') as f:
-            config = json.load(f)
-        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', config['job_config_file']), 'r') as f:
-            job_config = json.load(f)
+    def __init__(self, config, job_config):
+        if config is None:
+            with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'bulk-tx-config.json'), 'r') as f:
+                config = json.load(f)
+        if job_config is None:
+            with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', config['job_config_file']), 'r') as f:
+                job_config = json.load(f)
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'network-wallets.json'), 'r') as f:
             network_wallets_config = json.load(f)
 
-        super().__init__(NetworkType[config['network']], 'bulk-process-tx')
+        super().__init__(NetworkType[config['network']], 'bulk_process_tx')
 
         self.test_only = config['test_only']
 

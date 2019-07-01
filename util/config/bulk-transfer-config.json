@@ -1,0 +1,10 @@
+{
+  "network" : "MAINNET",
+  "smart_contract" : "a721d5893480260bd28ca1f395f2c465d0b5b1c2",
+  "test_only" : true,
+
+  "from_address" : "AZGUhgJEt5UdAQm5a2iWY6KaKgBPmkmQbW",
+
+  "job_config_file" : "transfer-config.json",
+  "completed_job_file" : "completed-bulk-transfer-jobs.json"
+}
