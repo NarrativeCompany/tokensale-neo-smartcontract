@@ -26,6 +26,7 @@ python neo/contrib/bulk_process_tx.py
 """
 import os
 import json
+import asyncio
 
 from neo.Core.Blockchain import Blockchain
 
@@ -169,6 +170,8 @@ class BulkProcess(BlockchainMain):
         """
         count = 0
         while True:
+            await asyncio.sleep(1)
+
             count += 1
             if (count % 60) == 0:
                 self.logger.info("Block %s / %s", str(Blockchain.Default().Height), str(Blockchain.Default().HeaderHeight))
