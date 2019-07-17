@@ -28,7 +28,7 @@ python neo/contrib/neo-nrve-eventhandler.py
 import os
 import json
 import argparse
-from time import sleep
+import asyncio
 
 from neo.Core.Blockchain import Blockchain
 
@@ -42,6 +42,7 @@ from pymysql import MySQLError
 
 import smtplib
 from email.mime.text import MIMEText
+
 
 class TokenSaleEventHandler(BlockchainMain):
 
@@ -215,10 +216,10 @@ class TokenSaleEventHandler(BlockchainMain):
         s.send_message(msg)
         s.quit()
 
-    def custom_background_code(self):
+    async def custom_background_code(self):
         count = 0
         while True:
-            sleep(1)
+            await asyncio.sleep(1)
 
             count += 1
             if (count % 60) == 0:
@@ -254,7 +255,7 @@ class TokenSaleEventHandler(BlockchainMain):
             self.whitelists_to_process = self.whitelists_to_process[6:]
 
             self.logger.debug('whitelisting addresses: %s', addresses_to_whitelist)
-            result = self.test_invoke([self.smart_contract_hash, 'crowdsale_register', str(addresses_to_whitelist)], len(addresses_to_whitelist), False)
+            result = await self.test_invoke([self.smart_contract_hash, 'crowdsale_register', str(addresses_to_whitelist)], len(addresses_to_whitelist), False)
 
             if not result:
                 # transaction failed? wallet probably out-of-sync (insufficient funds) so reload it
