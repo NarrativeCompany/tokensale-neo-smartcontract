@@ -26,7 +26,6 @@ python neo/contrib/bulk_process_tx.py
 """
 import os
 import json
-from time import sleep
 
 from neo.Core.Blockchain import Blockchain
 
@@ -161,20 +160,27 @@ class BulkProcess(BlockchainMain):
             # change the jobs array to None (from an empty array) to indicate we are done and can shut down
             self.jobs = None
 
-    def custom_background_code(self):
+    async def custom_background_code(self):
         """ Custom code run in a background thread. Prints the current block height.
 
         This function is run in a daemonized thread, which means it can be instantly killed at any
         moment, whenever the main thread quits. If you need more safety, don't use a  daemonized
         thread and handle exiting this thread in another way (eg. with signals and events).
         """
+        count = 0
         while True:
-            sleep(1)
+            count += 1
+            if (count % 60) == 0:
+                self.logger.info("Block %s / %s", str(Blockchain.Default().Height), str(Blockchain.Default().HeaderHeight))
+                count = 0
 
             if not self.job:
                 # no more jobs? then shut 'er down!
                 if self.jobs is None:
-                    self.shutdown()
+                    # delete the syncd wallet if we finished successfully
+                    if os.path.exists(self.syncd_wallet_path):
+                        os.remove(self.syncd_wallet_path)
+                    self.quit()
 
                 # if it's a refund job, then check to see if we have the transaction recorded yet. if not, keep waiting.
                 # note that this will give an info log "Could not find transaction for hash b'xxx'" every second until the tx is processed.
@@ -195,14 +201,14 @@ class BulkProcess(BlockchainMain):
 
             # special handling for sending refunds
             if self.is_refund_job():
-                self.process_refund_job()
+                await self.process_refund_job()
             else:
-                self.process_testinvoke_job()
+                await self.process_testinvoke_job()
 
     def is_refund_job(self):
         return self.operation == 'send'
 
-    def process_refund_job(self):
+    async def process_refund_job(self):
         if len(self.job) != self.operation_args_array_length:
             self.logger.error('ERROR! must have exactly %d operation args, not %d. skipping! %s', self.operation_args_array_length, len(self.job), self.job)
             self.job = None
@@ -210,7 +216,7 @@ class BulkProcess(BlockchainMain):
             return
 
         # bl: tx can fail if there are no connected peers, so wait for one
-        self.wait_for_peers()
+        await self.wait_for_peers()
 
         self.logger.debug('processing refund: %s', self.job)
         # in case we have to rebuild the wallet and try the job again, pass in a new list to construct_and_send
@@ -224,7 +230,7 @@ class BulkProcess(BlockchainMain):
             self.job = None
             self.tx_processing = result.Hash
 
-    def process_testinvoke_job(self):
+    async def process_testinvoke_job(self):
         job_args = self.parser.parseString(self.operation + " " + str(self.job))
         job_args = job_args[0:]
 
@@ -243,7 +249,7 @@ class BulkProcess(BlockchainMain):
 
         args = [self.smart_contract_hash] + job_args
         self.logger.debug('processing job: %s', args)
-        result = self.test_invoke(args, self.expected_result_count, self.test_only, self.from_addr)
+        result = await self.test_invoke(args, self.expected_result_count, self.test_only, self.from_addr)
 
         if not result:
             # transaction failed? wallet probably out-of-sync (insufficient funds) so reload it

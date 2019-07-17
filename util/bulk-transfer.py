@@ -64,7 +64,7 @@ class BulkTransfer(BulkProcess):
 
         # write this job to the completed jobs file with the transaction hash
         if self.job_key is not None and not self.test_only:
-            self.completed_jobs[self.job_key] = self.tx_processing
+            self.completed_jobs[self.job_key] = self.tx_processing.ToString()
             self.serialize_completed_jobs_file()
 
         self.job_key = None
