@@ -246,10 +246,10 @@ class TokenSaleEventHandler(BlockchainMain):
                 continue
 
             if self.wallet_needs_recovery:
-                self.recover_wallet()
+                await self.recover_wallet()
                 self.wallet_needs_recovery = False
             else:
-                self.wallet_sync()
+                await self.wallet_sync()
 
             addresses_to_whitelist = self.whitelists_to_process[0:6]
             self.whitelists_to_process = self.whitelists_to_process[6:]
