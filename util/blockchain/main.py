@@ -111,30 +111,40 @@ class BlockchainMain:
         # _walletdb_loop.start(1)
         self.logger.info("Opened wallet at %s", self.wallet_path)
 
-    def wallet_sync(self):
-        self.wallet.ProcessBlocks(0)
+    async def wallet_sync(self, start_block=None, rebuild=False):
+        await self.wallet.sync_wallet(start_block, rebuild)
+        while not self.wallet.IsSynced:
+            self.logger.debug('waiting for wallet to be synced.')
+            await asyncio.sleep(1)
+        self.logger.debug('wallet synced!')
 
-    def wallet_close(self):
+    async def wallet_close(self):
         # _walletdb_loop.stop()
-        self.wallet_sync()
+        await self.wallet_sync()
         self.wallet.Close()
 
-    def recover_wallet(self):
+    async def recover_wallet(self):
         self.logger.warn("recovering wallet...")
         # check if the syncd wallet exists, and raise an exception if it does not!
         if not os.path.exists(self.syncd_wallet_path):
             raise EnvironmentError("Could not find file %s" % self.syncd_wallet_path)
-        self.wallet_close()
+        await self.wallet_close()
         os.remove(self.wallet_path)
         copyfile(self.syncd_wallet_path, self.wallet_path)
         self.wallet_open()
-        self.wallet_sync()
+        await self.wallet_sync()
         self.logger.warn("wallet recovered!")
 
+    async def rebuild_wallet(self, start_block):
+        self.logger.warn("rebuilding wallet from block %s..." % start_block)
+        await self.wallet_sync(start_block, True)
+        self.logger.warn("wallet rebuilt!")
+
     async def wait_for_peers(self):
-        while len(NodeManager().nodes) < 5:
-            self.logger.debug('waiting for at least 5 NodeManager peers. currently %s connected.' % len(NodeManager().nodes))
+        while len(NodeManager().nodes) < 10:
+            self.logger.debug('waiting for at least 10 NodeManager peers. currently %s connected.' % len(NodeManager().nodes))
             await asyncio.sleep(1)
+        self.logger.debug('%s connected NodeManager peers!' % len(NodeManager().nodes))
 
     async def test_invoke(self, args, expected_result_count, test_only=False, from_addr=None):
         if args and len(args) > 0:
@@ -160,6 +170,9 @@ class BlockchainMain:
                 # bl: tx can fail if there are no connected peers, so wait for one
                 await self.wait_for_peers()
 
+                # bl: may have waited a while for peers, so make sure the wallet is syncd before invoking the transaction
+                await self.wallet_sync()
+
                 return InvokeContract(self.wallet, tx, fee, from_addr)
             else:
                 print("Error testing contract invoke: %s" % args)
@@ -174,8 +187,8 @@ class BlockchainMain:
         raise SystemExit
 
     def run(self):
-        # bl: changing to 8 as recommended in the 8-10 range by localhuman (previously had this at 150)
-        settings.set_max_peers(8)
+        # bl: changing to 15 so that we can get connections with a high number to improve transaction relayability
+        settings.set_max_peers(15)
 
         loop = asyncio.get_event_loop()
 
@@ -230,7 +243,7 @@ class BlockchainMain:
 
         if self.wallet_path:
             logger.info("Closing wallet file %s" % self.wallet_path)
-            self.wallet_close()
+            asyncio.run(self.wallet_close())
 
         # After the reactor is stopped, gracefully shutdown the database.
         logger.info("Closing databases...")

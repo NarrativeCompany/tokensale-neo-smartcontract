@@ -55,6 +55,8 @@ class BulkProcess(BlockchainMain):
 
     wallet_needs_recovery = False
 
+    wallet_rebuild_start_block = None
+
     smart_contract = None
 
     job = None
@@ -97,6 +99,8 @@ class BulkProcess(BlockchainMain):
         self.sc_notify = self.smart_contract.on_notify(self.sc_notify)
         self.sc_storage = self.smart_contract.on_storage(self.sc_storage)
         self.sc_execution = self.smart_contract.on_execution(self.sc_execution)
+
+        self.wallet_rebuild_start_block = network_wallets_config[config['network']]['wallet_rebuild_start_block']
 
         self.setup_wallet(network_wallets_config[config['network']]['wallet_path'])
 
@@ -161,6 +165,23 @@ class BulkProcess(BlockchainMain):
             # change the jobs array to None (from an empty array) to indicate we are done and can shut down
             self.jobs = None
 
+    async def wallet_sync(self, start_block=None, rebuild=False):
+        if self.wallet_needs_recovery:
+            self.wallet_needs_recovery = False
+            await self.recover_wallet()
+        else:
+            await super().wallet_sync(start_block, rebuild)
+
+        # sleep for a second to make sure the wallet is fully syncd
+        await asyncio.sleep(1)
+
+    async def recover_wallet(self):
+        # no need to use the recover_wallet approach of copying the syncd file if we have a rebuild start block.
+        if self.wallet_rebuild_start_block:
+            await self.rebuild_wallet(self.wallet_rebuild_start_block)
+        else:
+            return await super().recover_wallet()
+
     async def custom_background_code(self):
         """ Custom code run in a background thread. Prints the current block height.
 
@@ -197,10 +218,7 @@ class BulkProcess(BlockchainMain):
                 continue
 
             if self.wallet_needs_recovery:
-                self.recover_wallet()
-                self.wallet_needs_recovery = False
-            else:
-                self.wallet_sync()
+                await self.wallet_sync()
 
             # special handling for sending refunds
             if self.is_refund_job():
@@ -220,6 +238,8 @@ class BulkProcess(BlockchainMain):
 
         # bl: tx can fail if there are no connected peers, so wait for one
         await self.wait_for_peers()
+
+        await self.wallet_sync()
 
         self.logger.debug('processing refund: %s', self.job)
         # in case we have to rebuild the wallet and try the job again, pass in a new list to construct_and_send
