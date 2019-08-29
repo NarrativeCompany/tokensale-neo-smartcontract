@@ -13,7 +13,7 @@ class BulkTransfer(BulkProcess):
     completed_jobs = None
     job_key = None
 
-    def __init__(self, from_address, wallet_file):
+    def __init__(self, from_address, wallet_file, wallet_start_block):
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config', 'bulk-transfer-config.json'), 'r') as f:
             config = json.load(f)
 
@@ -51,7 +51,8 @@ class BulkTransfer(BulkProcess):
 
         network_wallets_config = {
             config["network"]: {
-                "wallet_path": wallet_file
+                "wallet_path": wallet_file,
+                "wallet_rebuild_start_block": wallet_start_block
             }
         }
 
@@ -64,7 +65,7 @@ class BulkTransfer(BulkProcess):
 
         # write this job to the completed jobs file with the transaction hash
         if self.job_key is not None and not self.test_only:
-            self.completed_jobs[self.job_key] = self.tx_processing
+            self.completed_jobs[self.job_key] = self.tx_processing.ToString()
             self.serialize_completed_jobs_file()
 
         self.job_key = None
@@ -89,24 +90,27 @@ class BulkTransfer(BulkProcess):
 def main(argv):
     from_address = None
     wallet_file = None
+    wallet_start_block = None
     try:
-        opts, args = getopt.getopt(argv, "ha:w:", ["from_address=", "wallet_file="])
+        opts, args = getopt.getopt(argv, "ha:w:b:", ["from_address=", "wallet_file=", "wallet_start_block="])
         for opt, arg in opts:
             if opt == '-h':
-                print('bulk-transfer.py -a <from_address> -w <wallet_file>')
+                print('bulk-transfer.py -a <from_address> -w <wallet_file> -b <wallet_start_block>')
                 sys.exit()
             elif opt in ("-a", "--from_address"):
                 from_address = arg
             elif opt in ("-w", "--wallet_file"):
                 wallet_file = arg
+            elif opt in ("-b", "--wallet_start_block"):
+                wallet_start_block = int(arg)
     except getopt.GetoptError:
         pass
 
-    if from_address is None or wallet_file is None:
-        print('bulk-transfer.py -a <from_address> -w <wallet_file>')
+    if from_address is None or wallet_file is None or wallet_start_block is None:
+        print('bulk-transfer.py -a <from_address> -w <wallet_file> -b <wallet_start_block>')
         sys.exit(2)
 
-    bulk_transfer = BulkTransfer(from_address, wallet_file)
+    bulk_transfer = BulkTransfer(from_address, wallet_file, wallet_start_block)
     bulk_transfer.run()
 
 

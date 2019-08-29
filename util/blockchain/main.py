@@ -1,22 +1,27 @@
+import asyncio
 import os
-import threading
-from time import sleep
+import getpass
+from contextlib import suppress
 from enum import Enum
-from twisted.internet import reactor, task
 from shutil import copyfile
-from neo.Core.Blockchain import Blockchain
-from neo.Network.NodeLeader import NodeLeader
-from neo.Implementations.Blockchains.LevelDB.LevelDBBlockchain import LevelDBBlockchain
-from neo.Settings import settings
-from neo.Implementations.Wallets.peewee.UserWallet import UserWallet
-from prompt_toolkit import prompt
-from neo.Wallets.utils import to_aes_key
-from logzero import setup_logger
+from signal import SIGINT, SIGHUP, SIGTERM
+
 from base58 import b58encode_check
+from logzero import setup_logger
 
-from neocore.Fixed8 import Fixed8
-
+import neo.Storage.Implementation.DBFactory as DBFactory
+from neo.Core.Blockchain import Blockchain
+from neo.Core.Fixed8 import Fixed8
+from neo.Implementations.Notifications.NotificationDB import NotificationDB
+from neo.Implementations.Wallets.peewee.UserWallet import UserWallet
+from neo.Network.nodemanager import NodeManager
+from neo.Network.p2pservice import NetworkService
 from neo.Prompt.Commands.Invoke import InvokeContract, TestInvokeContract
+from neo.Settings import settings
+from neo.Wallets.utils import to_aes_key
+from neo.logging import log_manager
+
+logger = log_manager.getLogger()
 
 
 class NetworkType(Enum):
@@ -42,49 +47,17 @@ class BlockchainMain:
         # settings.set_logfile("/tmp/logfile.log", max_bytes=1e7, backup_count=3)
         self.logger = setup_logger(logger_name)
 
-    def run(self):
-
-        # bl: changing to 8 as recommended in the 8-10 range by localhuman (previously had this at 150)
-        settings.set_max_peers(8)
-
-        # Setup the blockchain
-        self.blockchain = LevelDBBlockchain(settings.chain_leveldb_path)
-        Blockchain.RegisterBlockchain(self.blockchain)
-        NodeLeader.Instance().Start()
-        dbloop = task.LoopingCall(Blockchain.Default().PersistBlocks)
-        dbloop.start(.1)
-        Blockchain.Default().PersistBlocks()
-
-        # Disable smart contract events for external smart contracts
-        settings.set_log_smart_contract_events(False)
-
-        # if the wallet was set up (by setting a path and loading the password), then open it!
-        if self.wallet_path:
-            self.wallet_open()
-
-        # Start a thread with custom code
-        d = threading.Thread(target=self.custom_background_code)
-        d.setDaemon(True)  # daemonizing the thread will kill it when the main thread is quit
-        d.start()
-
-        # invoke any pre-start action that needs to occur before we start the reactor.
-        # optional for subclasses to implement.
-        self.pre_start()
-
-        # Run all the things (blocking call)
-        self.logger.info("Everything setup and running. Waiting for events...")
-        reactor.run()
-        self.logger.info("Shutting down")
-        if self.wallet_path:
-            self.wallet_close()
-        Blockchain.Default().Dispose()
-        NodeLeader.Instance().Shutdown()
-        self.logger.info("Shut down.")
-
     def pre_start(self):
         pass
 
-    def custom_background_code(self):
+    async def run_loop(self):
+        nodemgr = NodeManager()
+        while not nodemgr.running:
+            await asyncio.sleep(0.1)
+
+        await self.custom_background_code()
+
+    async def custom_background_code(self):
         """ Custom code run in a background thread. Prints the current block height.
 
         This function is run in a daemonized thread, which means it can be instantly killed at any
@@ -93,7 +66,7 @@ class BlockchainMain:
         """
         while True:
             self.logger.info("Block %s / %s", str(Blockchain.Default().Height), str(Blockchain.Default().HeaderHeight))
-            sleep(60)
+            await asyncio.sleep(60)
 
     @staticmethod
     def get_address(raw_address):
@@ -112,7 +85,7 @@ class BlockchainMain:
             self.logger.info("Creating syncd copy of wallet file...")
             copyfile(self.wallet_path, self.syncd_wallet_path)
 
-        wallet_passwd = prompt("[password]> ", is_password=True)
+        wallet_passwd = getpass.getpass()
         self.wallet_passwd_key = to_aes_key(wallet_passwd)
 
         self.setup_network()
@@ -138,32 +111,42 @@ class BlockchainMain:
         # _walletdb_loop.start(1)
         self.logger.info("Opened wallet at %s", self.wallet_path)
 
-    def wallet_sync(self):
-        self.wallet.ProcessBlocks(0)
+    async def wallet_sync(self, start_block=None, rebuild=False):
+        await self.wallet.sync_wallet(start_block, rebuild)
+        while not self.wallet.IsSynced:
+            self.logger.debug('waiting for wallet to be synced.')
+            await asyncio.sleep(1)
+        self.logger.debug('wallet synced!')
 
-    def wallet_close(self):
+    async def wallet_close(self):
         # _walletdb_loop.stop()
-        self.wallet_sync()
+        await self.wallet_sync()
         self.wallet.Close()
 
-    def recover_wallet(self):
+    async def recover_wallet(self):
         self.logger.warn("recovering wallet...")
         # check if the syncd wallet exists, and raise an exception if it does not!
         if not os.path.exists(self.syncd_wallet_path):
             raise EnvironmentError("Could not find file %s" % self.syncd_wallet_path)
-        self.wallet_close()
+        await self.wallet_close()
         os.remove(self.wallet_path)
         copyfile(self.syncd_wallet_path, self.wallet_path)
         self.wallet_open()
-        self.wallet_sync()
+        await self.wallet_sync()
         self.logger.warn("wallet recovered!")
 
-    def wait_for_peers(self):
-        while len(NodeLeader.Instance().Peers) == 0:
-            self.logger.debug('waiting for NodeLeader peers')
-            sleep(1)
+    async def rebuild_wallet(self, start_block):
+        self.logger.warn("rebuilding wallet from block %s..." % start_block)
+        await self.wallet_sync(start_block, True)
+        self.logger.warn("wallet rebuilt!")
 
-    def test_invoke(self, args, expected_result_count, test_only=False, from_addr=None):
+    async def wait_for_peers(self):
+        while len(NodeManager().nodes) < 10:
+            self.logger.debug('waiting for at least 10 NodeManager peers. currently %s connected.' % len(NodeManager().nodes))
+            await asyncio.sleep(1)
+        self.logger.debug('%s connected NodeManager peers!' % len(NodeManager().nodes))
+
+    async def test_invoke(self, args, expected_result_count, test_only=False, from_addr=None):
         if args and len(args) > 0:
             tx, fee, results, num_ops, success = TestInvokeContract(self.wallet, args, from_addr=from_addr)
 
@@ -185,7 +168,10 @@ class BlockchainMain:
                     return True
 
                 # bl: tx can fail if there are no connected peers, so wait for one
-                self.wait_for_peers()
+                await self.wait_for_peers()
+
+                # bl: may have waited a while for peers, so make sure the wallet is syncd before invoking the transaction
+                await self.wallet_sync()
 
                 return InvokeContract(self.wallet, tx, fee, from_addr)
             else:
@@ -195,6 +181,71 @@ class BlockchainMain:
 
         return False
 
-    def shutdown(self):
-        self.logger.info("Shutdown invoked")
-        reactor.stop()
+    @staticmethod
+    def quit():
+        print('Shutting down. This may take a bit...')
+        raise SystemExit
+
+    def run(self):
+        # bl: changing to 15 so that we can get connections with a high number to improve transaction relayability
+        settings.set_max_peers(15)
+
+        loop = asyncio.get_event_loop()
+
+        # because a KeyboardInterrupt is so violent it can shutdown the DB in an unpredictable state.
+        loop.add_signal_handler(SIGINT, quit)
+        loop.add_signal_handler(SIGHUP, quit)
+        loop.add_signal_handler(SIGTERM, quit)
+
+        # Disable smart contract events for external smart contracts
+        settings.set_log_smart_contract_events(False)
+
+        # Instantiate the blockchain and subscribe to notifications
+        blockchain = Blockchain(DBFactory.getBlockchainDB(settings.chain_leveldb_path))
+        Blockchain.RegisterBlockchain(blockchain)
+
+        # Try to set up a notification db
+        if NotificationDB.instance():
+            NotificationDB.instance().start()
+
+        # if the wallet was set up (by setting a path and loading the password), then open it!
+        if self.wallet_path:
+            self.wallet_open()
+
+        # invoke any pre-start action that needs to occur before we start the loop.
+        # optional for subclasses to implement.
+        self.pre_start()
+
+        blockchain_main_task = loop.create_task(self.run_loop())
+        p2p = NetworkService()
+        loop.create_task(p2p.start())
+
+        async def shutdown():
+            all_tasks = asyncio.all_tasks()
+            for task in all_tasks:
+                task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
+
+        try:
+            loop.run_forever()
+        except (SystemExit,KeyboardInterrupt):
+            with suppress((SystemExit, Exception)):
+                blockchain_main_task.exception()
+            loop.run_until_complete(p2p.shutdown())
+            loop.run_until_complete(shutdown())
+            loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.stop()
+        finally:
+            loop.close()
+
+        # Run things
+
+        if self.wallet_path:
+            logger.info("Closing wallet file %s" % self.wallet_path)
+            asyncio.run(self.wallet_close())
+
+        # After the reactor is stopped, gracefully shutdown the database.
+        logger.info("Closing databases...")
+        NotificationDB.close()
+        Blockchain.Default().Dispose()
